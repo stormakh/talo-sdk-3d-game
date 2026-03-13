@@ -267,7 +267,13 @@ let _webhookHandler: (request: Request) => Promise<Response>;
 function getWebhookHandler(): (request: Request) => Promise<Response> {
   if (!_webhookHandler) {
     _webhookHandler = getTalo().webhooks.handler({
-      onPaymentUpdated: async ({ payment }) => {
+      onPaymentUpdated: async ({ event, payment }) => {
+    console.log("[WEBHOOK] onPaymentUpdated fired");
+    console.log("[WEBHOOK] event:", JSON.stringify(event));
+    console.log("[WEBHOOK] payment keys:", Object.keys(payment as Record<string, unknown>));
+    console.log("[WEBHOOK] payment full:", JSON.stringify(payment));
+    console.log("[WEBHOOK] payment.transactions:", JSON.stringify((payment as Record<string, unknown>).transactions));
+
     const externalId = payment.external_id;
     if (!externalId) return;
 
@@ -275,6 +281,10 @@ function getWebhookHandler(): (request: Request) => Promise<Response> {
       ((payment as Record<string, unknown>).transactions as
         | TaloTransaction[]
         | undefined) ?? [];
+
+    console.log("[WEBHOOK] parsed transactions:", JSON.stringify(transactions));
+    console.log("[WEBHOOK] tx[0] beneficiary_name:", transactions[0]?.beneficiary_name);
+    console.log("[WEBHOOK] tx[0] cuit:", transactions[0]?.cuit);
 
     const raceMatch = externalId.match(/^race_(.+)$/);
     if (raceMatch) {

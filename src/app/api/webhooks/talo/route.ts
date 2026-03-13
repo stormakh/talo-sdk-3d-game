@@ -294,5 +294,42 @@ function getWebhookHandler(): (request: Request) => Promise<Response> {
 }
 
 export async function POST(request: Request) {
-  return getWebhookHandler()(request);
+  console.log("[WEBHOOK] POST received");
+  console.log("[WEBHOOK] URL:", request.url);
+  console.log("[WEBHOOK] Headers:", JSON.stringify(Object.fromEntries(request.headers.entries())));
+
+  // Read body once and clone for the handler
+  const bodyText = await request.text();
+  console.log("[WEBHOOK] Body:", bodyText);
+
+  console.log("[WEBHOOK] ENV check - TALO_CLIENT_ID:", process.env.TALO_CLIENT_ID ? `${process.env.TALO_CLIENT_ID.substring(0, 8)}... (len=${process.env.TALO_CLIENT_ID.length})` : "MISSING");
+  console.log("[WEBHOOK] ENV check - TALO_CLIENT_SECRET:", process.env.TALO_CLIENT_SECRET ? `${process.env.TALO_CLIENT_SECRET.substring(0, 8)}... (len=${process.env.TALO_CLIENT_SECRET.length})` : "MISSING");
+  console.log("[WEBHOOK] ENV check - TALO_USER_ID:", process.env.TALO_USER_ID ? `${process.env.TALO_USER_ID.substring(0, 8)}... (len=${process.env.TALO_USER_ID.length})` : "MISSING");
+  console.log("[WEBHOOK] ENV check - TALO_ENVIRONMENT:", JSON.stringify(process.env.TALO_ENVIRONMENT));
+
+  // Reconstruct the request with the body so the handler can read it
+  const newRequest = new Request(request.url, {
+    method: request.method,
+    headers: request.headers,
+    body: bodyText,
+  });
+
+  try {
+    const handler = getWebhookHandler();
+    console.log("[WEBHOOK] Calling handler...");
+    const response = await handler(newRequest);
+    console.log("[WEBHOOK] Handler response status:", response.status);
+    const responseBody = await response.text();
+    console.log("[WEBHOOK] Handler response body:", responseBody);
+    return new Response(responseBody, {
+      status: response.status,
+      headers: response.headers,
+    });
+  } catch (error) {
+    console.error("[WEBHOOK] Handler threw error:", error);
+    return new Response(JSON.stringify({ error: "Webhook processing failed" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 }

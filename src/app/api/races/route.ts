@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { races, slots } from "@/lib/db/schema";
-import { talo } from "@/lib/talo";
+import { getTalo } from "@/lib/talo";
 import { generateRaceId } from "@/lib/utils";
 import { eq, desc, sql } from "drizzle-orm";
 
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
     // Create a single Talo payment for the entire race (size * $1 ARS)
     console.log("[POST /api/races] Creating Talo payment...");
-    const payment = await talo.payments.create({
+    const payment = await getTalo().payments.create({
       user_id: process.env.TALO_USER_ID!,
       price: { amount: size, currency: "ARS" },
       payment_options: ["transfer"],

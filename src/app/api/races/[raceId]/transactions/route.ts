@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { races } from "@/lib/db/schema";
-import { talo } from "@/lib/talo";
+import { getTalo } from "@/lib/talo";
 import { eq } from "drizzle-orm";
 
 export async function GET(
@@ -26,7 +26,7 @@ export async function GET(
     }
 
     // Fetch payment from Talo to get current transactions
-    const payment = await talo.payments.get(race.paymentId);
+    const payment = await getTalo().payments.get(race.paymentId);
     const transactions = (payment as Record<string, unknown>).transactions as Array<{
       amount?: string | number;
       currency?: string;

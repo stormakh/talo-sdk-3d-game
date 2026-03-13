@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { races, slots, leaderboard, registrations } from "@/lib/db/schema";
-import { talo } from "@/lib/talo";
+import { getTalo } from "@/lib/talo";
 import { simulateRace } from "@/lib/race-simulation";
 import { emitRaceEvent } from "@/lib/race-events";
 import { eq, sql } from "drizzle-orm";
@@ -262,8 +262,12 @@ async function handleRegistrationPayment(
     .where(eq(leaderboard.cuit, validTx.cuit));
 }
 
-const webhookHandler = talo.webhooks.handler({
-  onPaymentUpdated: async ({ payment }) => {
+let _webhookHandler: (request: Request) => Promise<Response>;
+
+function getWebhookHandler(): (request: Request) => Promise<Response> {
+  if (!_webhookHandler) {
+    _webhookHandler = getTalo().webhooks.handler({
+      onPaymentUpdated: async ({ payment }) => {
     const externalId = payment.external_id;
     if (!externalId) return;
 
@@ -284,8 +288,11 @@ const webhookHandler = talo.webhooks.handler({
       return;
     }
   },
-});
+    });
+  }
+  return _webhookHandler;
+}
 
 export async function POST(request: Request) {
-  return webhookHandler(request);
+  return getWebhookHandler()(request);
 }

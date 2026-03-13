@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { registrations } from "@/lib/db/schema";
-import { talo } from "@/lib/talo";
+import { getTalo } from "@/lib/talo";
 import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
 
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const id = nanoid(10);
     const avatarUrl = `https://unavatar.io/x/${handle}`;
 
-    const payment = await talo.payments.create({
+    const payment = await getTalo().payments.create({
       user_id: process.env.TALO_USER_ID!,
       price: { amount: 10, currency: "ARS" },
       payment_options: ["transfer"],

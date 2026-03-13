@@ -1,0 +1,128 @@
+<h2>Race Page Layout</h2>
+<p class="subtitle">This page has two states: waiting for players, and showing the finished 3D race. Which layout for each?</p>
+
+<div class="cards">
+  <div class="card" data-choice="centered-card" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0d1a0d; padding: 16px; min-height: 320px;">
+      <!-- Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid #c8a84e33; margin-bottom: 12px;">
+        <div style="color: #c8a84e; font-family: Georgia, serif; font-size: 12px;">The Derby Club</div>
+        <div style="color: #7a8a6a; font-size: 9px; background: #c8a84e22; padding: 2px 8px; border-radius: 2px;">Awaiting Riders</div>
+      </div>
+      <!-- Centered card -->
+      <div style="max-width: 85%; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 12px;">
+          <div style="color: #7a8a6a; font-size: 9px; letter-spacing: 3px; text-transform: uppercase;">Race</div>
+          <div style="color: #f0ead6; font-family: Georgia, serif; font-size: 20px;">6-Horse Derby</div>
+          <div style="color: #c8a84e; font-size: 10px; margin-top: 2px;">3 of 6 confirmed</div>
+        </div>
+        <!-- Slot grid -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px;">
+          <div style="background: #1a2f1a; border: 1px solid #c8a84e; border-radius: 4px; padding: 8px; text-align: center;">
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: #2a3f2a; margin: 0 auto 4px; border: 1px solid #c8a84e;"></div>
+            <div style="color: #f0ead6; font-size: 8px;">@santi</div>
+            <div style="color: #4ade80; font-size: 7px;">&#10003; Paid</div>
+          </div>
+          <div style="background: #1a2f1a; border: 1px solid #c8a84e; border-radius: 4px; padding: 8px; text-align: center;">
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: #2a3f2a; margin: 0 auto 4px; border: 1px solid #c8a84e;"></div>
+            <div style="color: #f0ead6; font-size: 8px;">@rider99</div>
+            <div style="color: #4ade80; font-size: 7px;">&#10003; Paid</div>
+          </div>
+          <div style="background: #1a2f1a; border: 1px solid #eab308; border-radius: 4px; padding: 8px; text-align: center;">
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: #2a3f2a; margin: 0 auto 4px; border: 1px solid #eab308;"></div>
+            <div style="color: #f0ead6; font-size: 8px;">@newbie</div>
+            <div style="color: #eab308; font-size: 7px;">&#9679; Pending</div>
+          </div>
+          <div style="background: #0d1a0d; border: 1px dashed #2a3f2a; border-radius: 4px; padding: 8px; text-align: center;">
+            <div style="width: 24px; height: 24px; border-radius: 50%; border: 1px dashed #333; margin: 0 auto 4px;"></div>
+            <div style="color: #333; font-size: 8px;">Lane 4</div>
+          </div>
+          <div style="background: #0d1a0d; border: 1px dashed #2a3f2a; border-radius: 4px; padding: 8px; text-align: center;">
+            <div style="width: 24px; height: 24px; border-radius: 50%; border: 1px dashed #333; margin: 0 auto 4px;"></div>
+            <div style="color: #333; font-size: 8px;">Lane 5</div>
+          </div>
+          <div style="background: #0d1a0d; border: 1px dashed #2a3f2a; border-radius: 4px; padding: 8px; text-align: center;">
+            <div style="width: 24px; height: 24px; border-radius: 50%; border: 1px dashed #333; margin: 0 auto 4px;"></div>
+            <div style="color: #333; font-size: 8px;">Lane 6</div>
+          </div>
+        </div>
+        <!-- Join form -->
+        <div style="background: #1a2f1a; border: 1px solid #2a3f2a; border-radius: 4px; padding: 10px;">
+          <div style="color: #7a8a6a; font-size: 9px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">Enter the Race</div>
+          <div style="display: flex; gap: 6px;">
+            <div style="flex: 1; background: #0d1a0d; border: 1px solid #2a3f2a; border-radius: 3px; padding: 6px 8px; color: #7a8a6a; font-size: 10px;">@your_x_handle</div>
+            <div style="background: #c8a84e; color: #0d1a0d; padding: 6px 12px; border-radius: 3px; font-size: 10px; font-weight: 700; white-space: nowrap;">JOIN - $1</div>
+          </div>
+        </div>
+        <!-- Share -->
+        <div style="text-align: center; margin-top: 10px;">
+          <div style="color: #7a8a6a; font-size: 8px;">Share: race.3dhorserace.com/abc123</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A) Centered Card</h3>
+      <p>Everything contained in a single centered card. Slot grid at top, join form below. Clean, focused, nothing distracting. Share URL at bottom.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="immersive-theater" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: linear-gradient(180deg, #0d1a0d 0%, #162416 50%, #1a2f1a 100%); padding: 16px; min-height: 320px;">
+      <!-- Top bar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div style="color: #c8a84e; font-family: Georgia, serif; font-size: 12px;">&#8592; Lobby</div>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <div style="color: #7a8a6a; font-size: 9px;">Share</div>
+          <div style="color: #c8a84e; font-size: 9px;">&#9741;</div>
+        </div>
+      </div>
+      <!-- Big race name -->
+      <div style="text-align: center; margin-bottom: 4px;">
+        <div style="color: #c8a84e; font-size: 9px; letter-spacing: 4px; text-transform: uppercase;">Race #abc123</div>
+        <div style="color: #f0ead6; font-family: Georgia, serif; font-size: 28px; line-height: 1.1;">The 6-Horse<br>Derby</div>
+      </div>
+      <!-- Horizontal slots as a "stage" -->
+      <div style="display: flex; justify-content: center; gap: 8px; margin: 16px 0; padding: 12px 0; border-top: 1px solid #c8a84e22; border-bottom: 1px solid #c8a84e22;">
+        <div style="text-align: center;">
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: #2a3f2a; border: 2px solid #c8a84e; margin: 0 auto 3px;"></div>
+          <div style="color: #f0ead6; font-size: 7px;">@santi</div>
+          <div style="color: #4ade80; font-size: 6px;">&#10003;</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: #2a3f2a; border: 2px solid #c8a84e; margin: 0 auto 3px;"></div>
+          <div style="color: #f0ead6; font-size: 7px;">@rider99</div>
+          <div style="color: #4ade80; font-size: 6px;">&#10003;</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: #2a3f2a; border: 2px solid #eab308; margin: 0 auto 3px;"></div>
+          <div style="color: #f0ead6; font-size: 7px;">@newbie</div>
+          <div style="color: #eab308; font-size: 6px;">&#9679;</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="width: 32px; height: 32px; border-radius: 50%; border: 1px dashed #333; margin: 0 auto 3px;"></div>
+          <div style="color: #333; font-size: 7px;">Open</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="width: 32px; height: 32px; border-radius: 50%; border: 1px dashed #333; margin: 0 auto 3px;"></div>
+          <div style="color: #333; font-size: 7px;">Open</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="width: 32px; height: 32px; border-radius: 50%; border: 1px dashed #333; margin: 0 auto 3px;"></div>
+          <div style="color: #333; font-size: 7px;">Open</div>
+        </div>
+      </div>
+      <!-- Join CTA -->
+      <div style="text-align: center;">
+        <div style="display: inline-flex; gap: 6px; align-items: center; background: #1a2f1a; border: 1px solid #2a3f2a; border-radius: 4px; padding: 8px 12px;">
+          <div style="background: #0d1a0d; border: 1px solid #2a3f2a; border-radius: 3px; padding: 5px 8px; color: #7a8a6a; font-size: 10px; min-width: 100px;">@handle</div>
+          <div style="background: #c8a84e; color: #0d1a0d; padding: 5px 14px; border-radius: 3px; font-size: 10px; font-weight: 700;">RIDE - $1</div>
+        </div>
+        <div style="color: #7a8a6a; font-size: 8px; font-style: italic; margin-top: 8px;">3 of 6 riders confirmed. Waiting...</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B) Immersive Theater</h3>
+      <p>Full-page experience. Big dramatic title, horizontal rider lineup like a "stage", centered join CTA. Feels like entering an event. Transitions seamlessly to 3D race view when finished.</p>
+    </div>
+  </div>
+</div>

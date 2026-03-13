@@ -1,0 +1,145 @@
+<h2>Homepage Layout</h2>
+<p class="subtitle">How should the race lobby and leaderboard be arranged?</p>
+
+<div class="cards">
+  <div class="card" data-choice="split-panel" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0d1a0d; padding: 16px; min-height: 280px;">
+      <!-- Nav -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #c8a84e33; margin-bottom: 16px;">
+        <div style="color: #c8a84e; font-family: Georgia, serif; font-size: 14px;">The Derby Club</div>
+        <div style="background: #c8a84e; color: #0d1a0d; padding: 4px 10px; border-radius: 2px; font-size: 10px; font-weight: 700;">CREATE RACE</div>
+      </div>
+      <!-- Split -->
+      <div style="display: flex; gap: 12px;">
+        <!-- Left: Races -->
+        <div style="flex: 3;">
+          <div style="color: #7a8a6a; font-size: 9px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Open Races</div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="background: #1a2f1a; border: 1px solid #2a3f2a; border-radius: 4px; padding: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="color: #f0ead6; font-size: 11px; font-family: Georgia, serif;">6-Horse Race</div>
+                <div style="color: #7a8a6a; font-size: 9px;">4/6 confirmed</div>
+              </div>
+              <div style="display: flex; gap: 2px;">
+                <div style="width: 16px; height: 16px; border-radius: 50%; background: #2a3f2a; border: 1px solid #c8a84e;"></div>
+                <div style="width: 16px; height: 16px; border-radius: 50%; background: #2a3f2a; border: 1px solid #c8a84e;"></div>
+                <div style="width: 16px; height: 16px; border-radius: 50%; background: #2a3f2a; border: 1px solid #333;"></div>
+              </div>
+            </div>
+            <div style="background: #1a2f1a; border: 1px solid #2a3f2a; border-radius: 4px; padding: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="color: #f0ead6; font-size: 11px; font-family: Georgia, serif;">4-Horse Race</div>
+                <div style="color: #7a8a6a; font-size: 9px;">1/4 confirmed</div>
+              </div>
+              <div style="display: flex; gap: 2px;">
+                <div style="width: 16px; height: 16px; border-radius: 50%; background: #2a3f2a; border: 1px solid #c8a84e;"></div>
+                <div style="width: 16px; height: 16px; border-radius: 50%; background: #2a3f2a; border: 1px solid #333;"></div>
+              </div>
+            </div>
+            <div style="background: #1a2f1a; border: 1px solid #2a3f2a; border-radius: 4px; padding: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="color: #f0ead6; font-size: 11px; font-family: Georgia, serif;">10-Horse Race</div>
+                <div style="color: #7a8a6a; font-size: 9px;">7/10 confirmed</div>
+              </div>
+              <div style="display: flex; gap: 2px;">
+                <div style="width: 16px; height: 16px; border-radius: 50%; background: #2a3f2a; border: 1px solid #c8a84e;"></div>
+                <div style="width: 16px; height: 16px; border-radius: 50%; background: #2a3f2a; border: 1px solid #c8a84e;"></div>
+                <div style="width: 16px; height: 16px; border-radius: 50%; background: #2a3f2a; border: 1px solid #333;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Right: Leaderboard -->
+        <div style="flex: 2;">
+          <div style="color: #7a8a6a; font-size: 9px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Leaderboard</div>
+          <div style="background: #1a2f1a; border: 1px solid #2a3f2a; border-radius: 4px; padding: 8px;">
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #2a3f2a;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #c8a84e; font-size: 10px; font-weight: 700;">1</span>
+                <div style="width: 14px; height: 14px; border-radius: 50%; background: #2a3f2a;"></div>
+                <span style="color: #f0ead6; font-size: 10px;">@champion</span>
+              </div>
+              <span style="color: #c8a84e; font-size: 10px; font-weight: 700;">42 pts</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #2a3f2a;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #aaa; font-size: 10px; font-weight: 700;">2</span>
+                <div style="width: 14px; height: 14px; border-radius: 50%; background: #2a3f2a;"></div>
+                <span style="color: #f0ead6; font-size: 10px;">@rider99</span>
+              </div>
+              <span style="color: #aaa; font-size: 10px;">38 pts</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #8b6914; font-size: 10px; font-weight: 700;">3</span>
+                <div style="width: 14px; height: 14px; border-radius: 50%; background: #2a3f2a;"></div>
+                <span style="color: #f0ead6; font-size: 10px;">@fastboy</span>
+              </div>
+              <span style="color: #8b6914; font-size: 10px;">31 pts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A) Side-by-Side Split</h3>
+      <p>Races take 60% left, leaderboard 40% right. Everything visible at once. Stacks vertically on mobile.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="hero-stacked" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: #0d1a0d; padding: 16px; min-height: 280px;">
+      <!-- Hero -->
+      <div style="text-align: center; padding: 16px 0; border-bottom: 1px solid #c8a84e33; margin-bottom: 12px;">
+        <div style="color: #c8a84e; font-size: 10px; letter-spacing: 4px; text-transform: uppercase;">Welcome to</div>
+        <div style="color: #f0ead6; font-family: Georgia, serif; font-size: 22px; margin: 4px 0;">The Derby Club</div>
+        <div style="color: #7a8a6a; font-size: 10px; font-style: italic;">Place your bets. Watch the race. Claim glory.</div>
+        <div style="margin-top: 10px;">
+          <span style="background: #c8a84e; color: #0d1a0d; padding: 6px 16px; border-radius: 2px; font-size: 10px; font-weight: 700;">CREATE A RACE</span>
+        </div>
+      </div>
+      <!-- Races row -->
+      <div style="color: #7a8a6a; font-size: 9px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">Open Races</div>
+      <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+        <div style="flex: 1; background: #1a2f1a; border: 1px solid #2a3f2a; border-radius: 4px; padding: 8px; text-align: center;">
+          <div style="color: #f0ead6; font-size: 10px; font-family: Georgia, serif;">6-Horse</div>
+          <div style="color: #c8a84e; font-size: 14px; font-weight: 700; margin: 2px 0;">4/6</div>
+          <div style="width: 100%; height: 3px; background: #2a3f2a; border-radius: 2px; overflow: hidden;"><div style="width: 66%; height: 100%; background: #c8a84e;"></div></div>
+        </div>
+        <div style="flex: 1; background: #1a2f1a; border: 1px solid #2a3f2a; border-radius: 4px; padding: 8px; text-align: center;">
+          <div style="color: #f0ead6; font-size: 10px; font-family: Georgia, serif;">4-Horse</div>
+          <div style="color: #c8a84e; font-size: 14px; font-weight: 700; margin: 2px 0;">1/4</div>
+          <div style="width: 100%; height: 3px; background: #2a3f2a; border-radius: 2px; overflow: hidden;"><div style="width: 25%; height: 100%; background: #c8a84e;"></div></div>
+        </div>
+        <div style="flex: 1; background: #1a2f1a; border: 1px solid #2a3f2a; border-radius: 4px; padding: 8px; text-align: center;">
+          <div style="color: #f0ead6; font-size: 10px; font-family: Georgia, serif;">10-Horse</div>
+          <div style="color: #c8a84e; font-size: 14px; font-weight: 700; margin: 2px 0;">7/10</div>
+          <div style="width: 100%; height: 3px; background: #2a3f2a; border-radius: 2px; overflow: hidden;"><div style="width: 70%; height: 100%; background: #c8a84e;"></div></div>
+        </div>
+      </div>
+      <!-- Leaderboard -->
+      <div style="color: #7a8a6a; font-size: 9px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">Top Riders</div>
+      <div style="display: flex; gap: 6px;">
+        <div style="flex: 1; background: #1a2f1a; border: 1px solid #c8a84e44; border-radius: 4px; padding: 8px; text-align: center;">
+          <div style="color: #c8a84e; font-size: 16px;">&#9813;</div>
+          <div style="color: #f0ead6; font-size: 10px;">@champion</div>
+          <div style="color: #c8a84e; font-size: 12px; font-weight: 700;">42 pts</div>
+        </div>
+        <div style="flex: 1; background: #1a2f1a; border: 1px solid #aaa3; border-radius: 4px; padding: 8px; text-align: center;">
+          <div style="color: #aaa; font-size: 16px;">&#9813;</div>
+          <div style="color: #f0ead6; font-size: 10px;">@rider99</div>
+          <div style="color: #aaa; font-size: 12px; font-weight: 700;">38 pts</div>
+        </div>
+        <div style="flex: 1; background: #1a2f1a; border: 1px solid #8b691433; border-radius: 4px; padding: 8px; text-align: center;">
+          <div style="color: #8b6914; font-size: 16px;">&#9813;</div>
+          <div style="color: #f0ead6; font-size: 10px;">@fastboy</div>
+          <div style="color: #8b6914; font-size: 12px; font-weight: 700;">31 pts</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B) Hero + Stacked Sections</h3>
+      <p>Prominent hero banner with CTA, then horizontal race cards, then podium-style top 3 leaderboard. Flows vertically, great on mobile.</p>
+    </div>
+  </div>
+</div>

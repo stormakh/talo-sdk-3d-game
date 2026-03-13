@@ -5,6 +5,7 @@ import { Navbar } from "@/components/lobby/navbar";
 import { Hero } from "@/components/lobby/hero";
 import { RaceList } from "@/components/lobby/race-list";
 import { LeaderboardPodium } from "@/components/lobby/leaderboard-podium";
+import { RegistrationBanner } from "@/components/lobby/registration-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -47,28 +48,10 @@ export default async function Home() {
     <main className="min-h-screen">
       <Navbar />
       <Hero />
-
-      {/* Registration banner */}
-      <div className="px-6 py-4">
-        <a
-          href="/register"
-          className="mx-auto block max-w-2xl rounded-lg border p-4 text-center transition-colors"
-          style={{
-            background: "var(--bg-card)",
-            borderColor: "var(--border-gold)",
-          }}
-        >
-          <p className="text-sm" style={{ color: "var(--text-primary)" }}>
-            Paga 10 pesos para que aparezca tu @ de X en vez de tu nombre del
-            banco.
-          </p>
-          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-            Paga una vez, usalo en todas las carreras.
-          </p>
-        </a>
-      </div>
-
+      <RegistrationBanner />
+      <div className="mx-auto my-2 h-px max-w-4xl bg-gradient-to-r from-transparent via-[#c8a84e33] to-transparent" />
       <RaceList races={serializedRaces} />
+      <div className="mx-auto my-2 h-px max-w-4xl bg-gradient-to-r from-transparent via-[#c8a84e33] to-transparent" />
       <LeaderboardPodium entries={leaderboardEntries} />
     </main>
   );

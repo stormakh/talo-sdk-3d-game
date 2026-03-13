@@ -1,5 +1,7 @@
 "use client";
 
+import { BorderBeam } from "@/components/ui/border-beam";
+
 export function PaymentInfo({
   alias,
   cvu,
@@ -15,12 +17,19 @@ export function PaymentInfo({
 
   return (
     <div
-      className="mx-auto w-full max-w-sm rounded-lg border p-5"
+      className="relative mx-auto w-full max-w-sm overflow-hidden rounded-lg border p-5"
       style={{
         background: "var(--bg-card)",
         borderColor: "var(--border-gold)",
       }}
     >
+      <BorderBeam
+        size={100}
+        duration={5}
+        colorFrom="#c8a84e"
+        colorTo="#8B6914"
+        borderWidth={1}
+      />
       <p className="label mb-3 text-center">Transferi para correr</p>
 
       {alias && (
@@ -46,7 +55,7 @@ export function PaymentInfo({
                 color: "var(--text-secondary)",
               }}
             >
-              Copy
+              Copiar
             </button>
           </div>
         </div>
@@ -75,7 +84,7 @@ export function PaymentInfo({
                 color: "var(--text-secondary)",
               }}
             >
-              Copy
+              Copiar
             </button>
           </div>
         </div>

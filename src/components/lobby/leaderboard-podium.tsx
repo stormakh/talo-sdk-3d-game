@@ -6,7 +6,7 @@ const RANK_COLORS = [
   "var(--text-bronze)",
 ];
 
-const RANK_LABELS = ["1st", "2nd", "3rd"];
+const RANK_LABELS = ["1ro", "2do", "3ro"];
 
 function getAvatarUrl(entry: LeaderboardEntry): string {
   if (entry.avatarUrl) return entry.avatarUrl;
@@ -60,9 +60,9 @@ export function LeaderboardPodium({
   if (entries.length === 0) {
     return (
       <section className="px-6 py-12">
-        <p className="label mb-4">Top Riders</p>
+        <p className="label mb-4">Mejores Jinetes</p>
         <p style={{ color: "var(--text-secondary)" }}>
-          No hay riders todavia. Se el primero en correr!
+          No hay jinetes todavia. Se el primero en correr!
         </p>
       </section>
     );
@@ -79,7 +79,7 @@ export function LeaderboardPodium({
 
   return (
     <section className="px-6 py-12">
-      <p className="label mb-6">Top Riders</p>
+      <p className="label mb-6">Mejores Jinetes</p>
 
       {/* Podium */}
       <div className="mb-8 flex items-end justify-center gap-4">

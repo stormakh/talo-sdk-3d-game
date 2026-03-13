@@ -11,12 +11,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "The Derby Club | 3D Horse Racing",
+  title: "The Derby Club | Carreras de Caballos 3D",
   description:
-    "Join or create 3D horse races, bet with friends, and watch the action unfold in real-time.",
+    "Crea o unite a carreras de caballos en 3D, transferi y mira la accion en vivo.",
   openGraph: {
     title: "The Derby Club",
-    description: "Join or create 3D horse races and watch the action live.",
+    description: "Carreras de caballos en 3D. Crea un derby, transferi y corré.",
     type: "website",
   },
 };
@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("font-sans", geist.variable)}>
+    <html lang="es-AR" className={cn("font-sans", geist.variable)}>
       <body className={`${inter.variable} min-h-screen antialiased`}>
         {children}
       </body>

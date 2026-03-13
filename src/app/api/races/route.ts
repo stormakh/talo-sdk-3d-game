@@ -36,13 +36,18 @@ export async function POST(request: Request) {
     });
     console.log("[POST /api/races] Talo payment created:", JSON.stringify(payment, null, 2));
 
-    // Extract alias and CVU from transaction_fields
+    // Extract alias and CVU from quotes (Talo returns these in quotes[0])
     const paymentDetails = payment as Record<string, unknown>;
-    const transactionFields = paymentDetails.transaction_fields as {
+    const quotes = paymentDetails.quotes as Array<{
       alias?: string;
       cvu?: string;
-    } | undefined;
-    console.log("[POST /api/races] transaction_fields:", JSON.stringify(transactionFields));
+      address?: string;
+    }> | undefined;
+    const quote = quotes?.[0];
+    // CVU can be in `cvu` or `address` field
+    const alias = quote?.alias ?? null;
+    const cvu = quote?.cvu ?? quote?.address ?? null;
+    console.log("[POST /api/races] quote:", JSON.stringify(quote));
 
     console.log("[POST /api/races] Inserting race into DB...");
     const [race] = await db
@@ -52,8 +57,8 @@ export async function POST(request: Request) {
         size,
         status: "waiting",
         paymentId: payment.id,
-        paymentAlias: transactionFields?.alias ?? null,
-        paymentCvu: transactionFields?.cvu ?? null,
+        paymentAlias: alias,
+        paymentCvu: cvu,
       })
       .returning();
     console.log("[POST /api/races] Race inserted:", JSON.stringify(race));

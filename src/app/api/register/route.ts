@@ -38,10 +38,14 @@ export async function POST(request: Request) {
     });
 
     const paymentDetails = payment as Record<string, unknown>;
-    const transactionFields = paymentDetails.transaction_fields as {
+    const quotes = paymentDetails.quotes as Array<{
       alias?: string;
       cvu?: string;
-    } | undefined;
+      address?: string;
+    }> | undefined;
+    const quote = quotes?.[0];
+    const paymentAlias = quote?.alias ?? null;
+    const paymentCvu = quote?.cvu ?? quote?.address ?? null;
 
     await db.insert(registrations).values({
       id,
@@ -54,8 +58,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         registrationId: id,
-        paymentAlias: transactionFields?.alias ?? null,
-        paymentCvu: transactionFields?.cvu ?? null,
+        paymentAlias,
+        paymentCvu,
       },
       { status: 201 }
     );

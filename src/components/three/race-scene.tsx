@@ -123,7 +123,7 @@ export function RaceScene({ race, onComplete }: RaceSceneProps) {
               background: "rgba(13,26,13,0.8)",
             }}
           >
-            Watch Again
+            Ver de Nuevo
           </button>
         </div>
       )}

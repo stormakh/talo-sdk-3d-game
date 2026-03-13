@@ -42,7 +42,7 @@ export function RiderLineup({
             className="text-[9px] uppercase tracking-widest"
             style={{ color: "var(--success)" }}
           >
-            Ready
+            Listo
           </span>
         </div>
       ))}

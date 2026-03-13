@@ -6,7 +6,7 @@ const RANK_COLORS = [
   "var(--text-bronze)",
 ];
 
-const RANK_LABELS = ["1st", "2nd", "3rd"];
+const RANK_LABELS = ["1ro", "2do", "3ro"];
 
 function getAvatarUrl(slot: SlotWithPosition): string {
   if (slot.avatarUrl) return slot.avatarUrl;

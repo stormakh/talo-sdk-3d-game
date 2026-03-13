@@ -11,9 +11,9 @@ export function RaceList({ races }: { races: Race[] }) {
   if (races.length === 0) {
     return (
       <section className="px-6 py-12">
-        <p className="label mb-4">Open Races</p>
+        <p className="label mb-4">Carreras Abiertas</p>
         <p style={{ color: "var(--text-secondary)" }}>
-          No open races right now. Create one to get started!
+          No hay carreras abiertas. Crea una para arrancar!
         </p>
       </section>
     );
@@ -21,7 +21,7 @@ export function RaceList({ races }: { races: Race[] }) {
 
   return (
     <section className="px-6 py-12">
-      <p className="label mb-4">Open Races</p>
+      <p className="label mb-4">Carreras Abiertas</p>
       <div className="flex gap-4 overflow-x-auto pb-4">
         {races.map((race) => (
           <RaceCard

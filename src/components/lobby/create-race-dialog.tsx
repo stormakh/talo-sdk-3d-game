@@ -32,12 +32,12 @@ export function CreateRaceDialog({
       console.log("[CreateRaceDialog] Response status:", res.status);
       const race = await res.json();
       console.log("[CreateRaceDialog] Response body:", JSON.stringify(race));
-      if (!res.ok) throw new Error(race.error || "Failed to create race");
+      if (!res.ok) throw new Error(race.error || "Error al crear la carrera");
       console.log("[CreateRaceDialog] Navigating to /race/" + race.id);
       router.push(`/race/${race.id}`);
     } catch (err) {
       console.error("[CreateRaceDialog] Error:", err);
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : "Algo salio mal");
       setCreating(false);
     }
   }
@@ -60,10 +60,10 @@ export function CreateRaceDialog({
           className="mb-1 text-2xl"
           style={{ fontFamily: "var(--font-serif)", color: "var(--text-primary)" }}
         >
-          Create a Race
+          Crear una Carrera
         </h2>
         <p className="mb-6 text-sm" style={{ color: "var(--text-secondary)" }}>
-          Choose how many horses will compete.
+          Elegi cuantos caballos van a competir.
         </p>
 
         <div className="mb-6 grid grid-cols-4 gap-2">
@@ -103,7 +103,7 @@ export function CreateRaceDialog({
               color: "var(--text-secondary)",
             }}
           >
-            Cancel
+            Cancelar
           </button>
           <button
             onClick={handleCreate}
@@ -114,7 +114,7 @@ export function CreateRaceDialog({
               color: "var(--bg-deep)",
             }}
           >
-            {creating ? "Creating..." : "Create"}
+            {creating ? "Creando..." : "Crear"}
           </button>
         </div>
       </div>

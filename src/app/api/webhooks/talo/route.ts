@@ -126,8 +126,10 @@ async function handleRacePayment(
   for (let txIndex = 0; txIndex < transactions.length; txIndex++) {
     const tx = transactions[txIndex];
     const txAmount = Math.floor(Number(tx.amount ?? 0));
-    const txCuit = tx.cuit ?? null;
-    const beneficiaryName = tx.beneficiary_name ?? "Anon";
+    // Extract sender info from transaction_data.PROCESSED
+    const processed = tx.transaction_data?.PROCESSED;
+    const txCuit = processed?.senderCuit ?? null;
+    const beneficiaryName = processed?.senderTitular ?? "Anon";
 
     if (txAmount <= 0) continue;
 
@@ -216,15 +218,16 @@ async function handleRegistrationPayment(
 
   if (!reg || reg.status === "confirmed") return;
 
-  // Find a transaction with amount >= 10
+  // Find a transaction with amount >= 10 and extract cuit from transaction_data
   const validTx = transactions.find((tx) => Number(tx.amount ?? 0) >= 10);
-  if (!validTx || !validTx.cuit) return;
+  const validTxCuit = validTx?.transaction_data?.PROCESSED?.senderCuit;
+  if (!validTx || !validTxCuit) return;
 
   // Upsert: if this cuit already has a registration, update it
   const [existingByCuit] = await db
     .select()
     .from(registrations)
-    .where(eq(registrations.cuit, validTx.cuit))
+    .where(eq(registrations.cuit, validTxCuit))
     .limit(1);
 
   if (existingByCuit && existingByCuit.id !== reg.id) {
@@ -245,7 +248,7 @@ async function handleRegistrationPayment(
     await db
       .update(registrations)
       .set({
-        cuit: validTx.cuit,
+        cuit: validTxCuit,
         status: "confirmed",
       })
       .where(eq(registrations.id, reg.id));
@@ -259,7 +262,7 @@ async function handleRegistrationPayment(
       avatarUrl: reg.avatarUrl,
       updatedAt: new Date(),
     })
-    .where(eq(leaderboard.cuit, validTx.cuit));
+    .where(eq(leaderboard.cuit, validTxCuit));
 }
 
 let _webhookHandler: (request: Request) => Promise<Response>;
@@ -267,14 +270,9 @@ let _webhookHandler: (request: Request) => Promise<Response>;
 function getWebhookHandler(): (request: Request) => Promise<Response> {
   if (!_webhookHandler) {
     _webhookHandler = getTalo().webhooks.handler({
-      onPaymentUpdated: async ({ event, payment }) => {
-    console.log("[WEBHOOK] onPaymentUpdated fired");
-    console.log("[WEBHOOK] event:", JSON.stringify(event));
-    console.log("[WEBHOOK] payment keys:", Object.keys(payment as Record<string, unknown>));
-    console.log("[WEBHOOK] payment full:", JSON.stringify(payment));
-    console.log("[WEBHOOK] payment.transactions:", JSON.stringify((payment as Record<string, unknown>).transactions));
-
+      onPaymentUpdated: async ({ payment }) => {
     const externalId = payment.external_id;
+    console.log("[WEBHOOK] payment updated:", externalId, payment.payment_status);
     if (!externalId) return;
 
     const transactions =
@@ -282,9 +280,11 @@ function getWebhookHandler(): (request: Request) => Promise<Response> {
         | TaloTransaction[]
         | undefined) ?? [];
 
-    console.log("[WEBHOOK] parsed transactions:", JSON.stringify(transactions));
-    console.log("[WEBHOOK] tx[0] beneficiary_name:", transactions[0]?.beneficiary_name);
-    console.log("[WEBHOOK] tx[0] cuit:", transactions[0]?.cuit);
+    if (transactions.length > 0) {
+      const tx0 = transactions[0];
+      const processed = tx0.transaction_data?.PROCESSED;
+      console.log("[WEBHOOK] tx sender:", processed?.senderTitular, "cuit:", processed?.senderCuit, "amount:", tx0.amount);
+    }
 
     const raceMatch = externalId.match(/^race_(.+)$/);
     if (raceMatch) {
@@ -304,42 +304,5 @@ function getWebhookHandler(): (request: Request) => Promise<Response> {
 }
 
 export async function POST(request: Request) {
-  console.log("[WEBHOOK] POST received");
-  console.log("[WEBHOOK] URL:", request.url);
-  console.log("[WEBHOOK] Headers:", JSON.stringify(Object.fromEntries(request.headers.entries())));
-
-  // Read body once and clone for the handler
-  const bodyText = await request.text();
-  console.log("[WEBHOOK] Body:", bodyText);
-
-  console.log("[WEBHOOK] ENV check - TALO_CLIENT_ID:", process.env.TALO_CLIENT_ID ? `${process.env.TALO_CLIENT_ID.substring(0, 8)}... (len=${process.env.TALO_CLIENT_ID.length})` : "MISSING");
-  console.log("[WEBHOOK] ENV check - TALO_CLIENT_SECRET:", process.env.TALO_CLIENT_SECRET ? `${process.env.TALO_CLIENT_SECRET.substring(0, 8)}... (len=${process.env.TALO_CLIENT_SECRET.length})` : "MISSING");
-  console.log("[WEBHOOK] ENV check - TALO_USER_ID:", process.env.TALO_USER_ID ? `${process.env.TALO_USER_ID.substring(0, 8)}... (len=${process.env.TALO_USER_ID.length})` : "MISSING");
-  console.log("[WEBHOOK] ENV check - TALO_ENVIRONMENT:", JSON.stringify(process.env.TALO_ENVIRONMENT));
-
-  // Reconstruct the request with the body so the handler can read it
-  const newRequest = new Request(request.url, {
-    method: request.method,
-    headers: request.headers,
-    body: bodyText,
-  });
-
-  try {
-    const handler = getWebhookHandler();
-    console.log("[WEBHOOK] Calling handler...");
-    const response = await handler(newRequest);
-    console.log("[WEBHOOK] Handler response status:", response.status);
-    const responseBody = await response.text();
-    console.log("[WEBHOOK] Handler response body:", responseBody);
-    return new Response(responseBody, {
-      status: response.status,
-      headers: response.headers,
-    });
-  } catch (error) {
-    console.error("[WEBHOOK] Handler threw error:", error);
-    return new Response(JSON.stringify({ error: "Webhook processing failed" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  return getWebhookHandler()(request);
 }

@@ -46,12 +46,23 @@ export type RaceWithSlots = {
 export type TaloTransaction = {
   amount?: string | number;
   currency?: string;
-  payment_date?: string;
-  beneficiary_name?: string;
-  cuit?: string;
-  cbu?: string;
-  cvu?: string;
-  alias?: string;
+  transaction_id?: string;
+  transaction_status?: string;
+  creation_timestamp?: string;
+  sender_address?: string;
+  transaction_data?: {
+    PROCESSED?: {
+      senderTitular?: string;
+      senderCuit?: string;
+      recipientTitular?: string;
+      recipientCuit?: string;
+      amount?: number;
+      netAmount?: number;
+      currency?: string;
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
 };
 
 export type LeaderboardEntry = {

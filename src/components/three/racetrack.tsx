@@ -291,7 +291,7 @@ export function Racetrack() {
       {/* Right side stands */}
       <Grandstand side="right" zCenter={35} seedOffset={200} standLength={22} />
       <Grandstand side="right" zCenter={75} seedOffset={600} standLength={28} />
-      <Grandstand side="right" zCenter={TRACK_LENGTH - 5} seedOffset={1000} standLength={15} />
+      <Grandstand side="left" zCenter={TRACK_LENGTH - 5} seedOffset={1000} standLength={15} />
     </group>
   );
 }

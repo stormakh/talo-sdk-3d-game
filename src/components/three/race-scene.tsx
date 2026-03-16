@@ -81,18 +81,16 @@ export function RaceScene({ race, onComplete }: RaceSceneProps) {
       >
         <Environment />
         <Racetrack />
+        <CameraController raceTime={raceTime} leadProgress={leadProgress} racing={phase === "racing"} />
 
         {phase === "racing" && (
-          <>
-            <RaceAnimationEngine
-              result={result}
-              slotsInfo={slotsInfo}
-              playing={true}
-              onTimeUpdate={handleTimeUpdate}
-              onComplete={handleComplete}
-            />
-            <CameraController raceTime={raceTime} leadProgress={leadProgress} />
-          </>
+          <RaceAnimationEngine
+            result={result}
+            slotsInfo={slotsInfo}
+            playing={true}
+            onTimeUpdate={handleTimeUpdate}
+            onComplete={handleComplete}
+          />
         )}
       </Canvas>
 

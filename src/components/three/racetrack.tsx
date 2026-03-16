@@ -1,11 +1,18 @@
 "use client";
 
 import * as THREE from "three";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 
 const TRACK_LENGTH = 50;
 const TRACK_WIDTH = 12;
 const FENCE_HEIGHT = 1.2;
+
+// Seeded random for deterministic crowd
+function seededRandom(seed: number) {
+  const x = Math.sin(seed * 9301 + 49297) * 49297;
+  return x - Math.floor(x);
+}
 
 function Fence({ side }: { side: "left" | "right" }) {
   const x = side === "left" ? -TRACK_WIDTH / 2 - 0.3 : TRACK_WIDTH / 2 + 0.3;
@@ -39,21 +46,93 @@ function Fence({ side }: { side: "left" | "right" }) {
   );
 }
 
-function Grandstand() {
+const CROWD_COLORS = [
+  "#c83232", "#3256c8", "#32a832", "#c8c832", "#c87832",
+  "#a832c8", "#32c8c8", "#c8326e", "#6e6e6e", "#e8e8e8",
+];
+
+function CrowdPerson({ position, seed }: { position: [number, number, number]; seed: number }) {
+  const color = CROWD_COLORS[Math.floor(seededRandom(seed) * CROWD_COLORS.length)];
+  const heightVar = 0.3 + seededRandom(seed + 1) * 0.15;
+  const ref = useRef<THREE.Group>(null);
+
+  // Subtle idle animation — bob up/down slowly
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      const phase = seededRandom(seed + 2) * Math.PI * 2;
+      const speed = 1.5 + seededRandom(seed + 3) * 1.5;
+      ref.current.position.y = position[1] + Math.sin(clock.elapsedTime * speed + phase) * 0.03;
+    }
+  });
+
   return (
-    <group position={[-TRACK_WIDTH / 2 - 5, 0, TRACK_LENGTH * 0.7]}>
+    <group ref={ref} position={position}>
+      {/* Body */}
+      <mesh position={[0, heightVar / 2, 0]}>
+        <boxGeometry args={[0.25, heightVar, 0.2]} />
+        <meshStandardMaterial color={color} />
+      </mesh>
+      {/* Head */}
+      <mesh position={[0, heightVar + 0.12, 0]}>
+        <sphereGeometry args={[0.1, 6, 6]} />
+        <meshStandardMaterial color="#d4a574" />
+      </mesh>
+    </group>
+  );
+}
+
+function Crowd({ tierY, tierX, tierZ, count, seedBase }: {
+  tierY: number; tierX: number; tierZ: number; count: number; seedBase: number;
+}) {
+  const people = useMemo(() => {
+    const arr: { pos: [number, number, number]; seed: number }[] = [];
+    for (let i = 0; i < count; i++) {
+      const z = tierZ + (seededRandom(seedBase + i) - 0.5) * 7;
+      const x = tierX + (seededRandom(seedBase + i + 100) - 0.5) * 1.5;
+      arr.push({ pos: [x, tierY + 0.2, z], seed: seedBase + i });
+    }
+    return arr;
+  }, [tierY, tierX, tierZ, count, seedBase]);
+
+  return (
+    <>
+      {people.map((p, i) => (
+        <CrowdPerson key={i} position={p.pos} seed={p.seed} />
+      ))}
+    </>
+  );
+}
+
+function Grandstand({ side }: { side: "left" | "right" }) {
+  const xSign = side === "left" ? -1 : 1;
+  const baseX = xSign * (TRACK_WIDTH / 2 + 5);
+  const zCenter = TRACK_LENGTH * (side === "left" ? 0.7 : 0.35);
+
+  return (
+    <group position={[baseX, 0, zCenter]}>
       {/* Tiered seating */}
       {[0, 1, 2].map((tier) => (
-        <mesh key={tier} position={[-tier * 1.5, tier * 1.2, 0]}>
+        <mesh key={tier} position={[-xSign * tier * 1.5, tier * 1.2, 0]}>
           <boxGeometry args={[3, 0.4, 8]} />
           <meshStandardMaterial color="#3a2a1a" />
         </mesh>
       ))}
       {/* Roof */}
-      <mesh position={[-2, 4, 0]}>
+      <mesh position={[-xSign * 2, 4, 0]}>
         <boxGeometry args={[6, 0.2, 10]} />
         <meshStandardMaterial color="#2a1a0a" />
       </mesh>
+      {/* Crowd on each tier */}
+      {[0, 1, 2].map((tier) => (
+        <Crowd
+          key={tier}
+          tierX={-xSign * tier * 1.5}
+          tierY={tier * 1.2 + 0.2}
+          tierZ={0}
+          count={8 + tier * 3}
+          seedBase={(side === "left" ? 0 : 200) + tier * 50}
+        />
+      ))}
     </group>
   );
 }
@@ -107,7 +186,8 @@ export function Racetrack() {
 
       <Fence side="left" />
       <Fence side="right" />
-      <Grandstand />
+      <Grandstand side="left" />
+      <Grandstand side="right" />
     </group>
   );
 }

@@ -250,9 +250,9 @@ export function Racetrack() {
         <meshStandardMaterial map={grassTex} />
       </mesh>
 
-      {/* Track surface — dirt with texture */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, TRACK_LENGTH / 2]} receiveShadow>
-        <planeGeometry args={[TRACK_WIDTH, TRACK_LENGTH + 4]} />
+      {/* Track surface — dirt with texture (extends 15 units past finish) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, (TRACK_LENGTH + 15) / 2]} receiveShadow>
+        <planeGeometry args={[TRACK_WIDTH, TRACK_LENGTH + 20]} />
         <meshStandardMaterial map={dirtTex} />
       </mesh>
 

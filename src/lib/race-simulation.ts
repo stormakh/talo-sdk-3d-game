@@ -1,8 +1,8 @@
 import type { Keyframe, HorseResult, RaceResult } from "@/types";
 
-const TOTAL_KEYFRAMES = 150;
-const RACE_DURATION = 15.0;
-const DT = RACE_DURATION / TOTAL_KEYFRAMES; // 0.1s
+const RACE_DURATION = 17.0; // extra 2s for coast past finish
+const DT = 0.1;
+const TOTAL_KEYFRAMES = Math.ceil(RACE_DURATION / DT);
 const WINNER_FINISH_TIME = 14.0;
 const SEGMENTS = 5;
 const SEGMENT_DURATION = RACE_DURATION / SEGMENTS; // 3s each
@@ -130,34 +130,45 @@ export function simulateRace(
     return { slotId: slot.id, finishPosition: position, rawKeyframes, targetFinishTime };
   });
 
-  // 4. Normalize progress so each horse reaches 1.0 at its target finish time.
+  // 4. Normalize progress so each horse reaches 1.0 at its target finish time,
+  //    then coasts past with deceleration.
+  const COAST_EXTRA = 0.08; // how far past 1.0 they coast
   const result: HorseResult[] = horses.map(
     ({ slotId, finishPosition, rawKeyframes, targetFinishTime }) => {
-      // Find the raw progress at the target finish time index.
       const finishIndex = Math.min(
         Math.round(targetFinishTime / DT),
-        TOTAL_KEYFRAMES - 1
+        rawKeyframes.length - 1
       );
       const rawProgressAtFinish = rawKeyframes[finishIndex].progress;
 
-      // Scale factor so that progress == 1.0 at finishIndex.
       const scale =
         rawProgressAtFinish > 0 ? 1.0 / rawProgressAtFinish : 1.0;
 
-      const keyframes: Keyframe[] = rawKeyframes.map((kf, i) => ({
-        t: kf.t,
-        progress: Math.min(kf.progress * scale, 1.0),
-        lateralOffset: kf.lateralOffset,
-        stumbling: kf.stumbling,
-      }));
+      const keyframes: Keyframe[] = rawKeyframes.map((kf) => {
+        const scaled = kf.progress * scale;
+        let progress: number;
+        if (scaled <= 1.0) {
+          progress = scaled;
+        } else {
+          // Coast past finish with deceleration (ease-out)
+          const overshoot = scaled - 1.0;
+          progress = 1.0 + COAST_EXTRA * (1 - Math.exp(-overshoot * 8));
+        }
+        return {
+          t: kf.t,
+          progress,
+          lateralOffset: kf.lateralOffset,
+          stumbling: kf.stumbling,
+        };
+      });
 
       return { slotId, finishPosition, keyframes };
     }
   );
 
-  // Overall duration is the latest finish time.
+  // Overall duration includes coast time.
   const durationSeconds = parseFloat(
-    Math.max(...finishTimes).toFixed(1)
+    (Math.max(...finishTimes) + 2.0).toFixed(1)
   );
 
   return { durationSeconds, horses: result };

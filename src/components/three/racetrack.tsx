@@ -46,7 +46,7 @@ function createGrassTexture(): THREE.CanvasTexture {
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(20, 20);
+  tex.repeat.set(40, 40);
   return tex;
 }
 
@@ -80,7 +80,7 @@ function createDirtTexture(): THREE.CanvasTexture {
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(4, 20);
+  tex.repeat.set(4, 48);
   return tex;
 }
 
@@ -173,18 +173,18 @@ function CrowdPerson({ position, seed }: { position: [number, number, number]; s
   );
 }
 
-function Crowd({ tierY, tierX, tierZ, count, seedBase }: {
-  tierY: number; tierX: number; tierZ: number; count: number; seedBase: number;
+function Crowd({ tierY, tierX, tierZ, count, seedBase, spreadZ = 7 }: {
+  tierY: number; tierX: number; tierZ: number; count: number; seedBase: number; spreadZ?: number;
 }) {
   const people = useMemo(() => {
     const arr: { pos: [number, number, number]; seed: number }[] = [];
     for (let i = 0; i < count; i++) {
-      const z = tierZ + (seededRandom(seedBase + i) - 0.5) * 7;
+      const z = tierZ + (seededRandom(seedBase + i) - 0.5) * spreadZ;
       const x = tierX + (seededRandom(seedBase + i + 100) - 0.5) * 1.5;
       arr.push({ pos: [x, tierY + 0.2, z], seed: seedBase + i });
     }
     return arr;
-  }, [tierY, tierX, tierZ, count, seedBase]);
+  }, [tierY, tierX, tierZ, count, seedBase, spreadZ]);
 
   return (
     <>
@@ -195,17 +195,21 @@ function Crowd({ tierY, tierX, tierZ, count, seedBase }: {
   );
 }
 
-function Grandstand({ side }: { side: "left" | "right" }) {
+function Grandstand({ side, zCenter, seedOffset, standLength }: {
+  side: "left" | "right";
+  zCenter: number;
+  seedOffset: number;
+  standLength: number;
+}) {
   const xSign = side === "left" ? -1 : 1;
   const baseX = xSign * (TRACK_WIDTH / 2 + 5);
-  const zCenter = TRACK_LENGTH * (side === "left" ? 0.7 : 0.35);
 
   return (
     <group position={[baseX, 0, zCenter]}>
       {/* Tiered seating */}
       {[0, 1, 2].map((tier) => (
         <mesh key={tier} position={[-xSign * tier * 1.5, tier * 1.2, 0]}>
-          <boxGeometry args={[3, 0.4, 8]} />
+          <boxGeometry args={[3, 0.4, standLength]} />
           <meshStandardMaterial color="#3a2a1a" />
         </mesh>
       ))}
@@ -216,8 +220,9 @@ function Grandstand({ side }: { side: "left" | "right" }) {
           tierX={-xSign * tier * 1.5}
           tierY={tier * 1.2 + 0.2}
           tierZ={0}
-          count={8 + tier * 3}
-          seedBase={(side === "left" ? 0 : 200) + tier * 50}
+          count={Math.floor((standLength / 8) * (8 + tier * 3))}
+          seedBase={seedOffset + tier * 50}
+          spreadZ={standLength * 0.9}
         />
       ))}
     </group>
@@ -241,7 +246,7 @@ export function Racetrack() {
     <group>
       {/* Ground plane — grass with texture */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, TRACK_LENGTH / 2]} receiveShadow>
-        <planeGeometry args={[100, 100]} />
+        <planeGeometry args={[200, TRACK_LENGTH + 80]} />
         <meshStandardMaterial map={grassTex} />
       </mesh>
 
@@ -277,8 +282,16 @@ export function Racetrack() {
 
       <Fence side="left" />
       <Fence side="right" />
-      <Grandstand side="left" />
-      <Grandstand side="right" />
+
+      {/* Left side stands — spread along the track */}
+      <Grandstand side="left" zCenter={20} seedOffset={0} standLength={20} />
+      <Grandstand side="left" zCenter={55} seedOffset={400} standLength={25} />
+      <Grandstand side="left" zCenter={95} seedOffset={800} standLength={20} />
+
+      {/* Right side stands */}
+      <Grandstand side="right" zCenter={35} seedOffset={200} standLength={22} />
+      <Grandstand side="right" zCenter={75} seedOffset={600} standLength={28} />
+      <Grandstand side="right" zCenter={TRACK_LENGTH - 5} seedOffset={1000} standLength={15} />
     </group>
   );
 }

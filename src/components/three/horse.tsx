@@ -1,15 +1,20 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
+import { useGLTF, Html } from "@react-three/drei";
 import * as THREE from "three";
-import { Html } from "@react-three/drei";
 
 const HORSE_COLORS = [
   "#8B4513", "#2F1A0A", "#D2691E", "#A0522D",
   "#6B3A2E", "#3B2012", "#C4A35A", "#1A1A1A",
   "#704214", "#5C4033",
 ];
+
+const MODEL_PATH = "/models/Horse.glb";
+
+// Preload the model
+useGLTF.preload(MODEL_PATH);
 
 type HorseProps = {
   lane: number;
@@ -25,81 +30,85 @@ export function Horse({
   displayName,
   color,
   progress,
-  lateralOffset,
   stumbling,
 }: HorseProps) {
-  const groupRef = useRef<THREE.Group>(null);
-  const legRefs = useRef<THREE.Mesh[]>([]);
+  const { scene, animations } = useGLTF(MODEL_PATH);
+  const meshRef = useRef<THREE.Mesh>(null);
+  const mixerRef = useRef<THREE.AnimationMixer | null>(null);
+  const actionRef = useRef<THREE.AnimationAction | null>(null);
 
   const horseColor = useMemo(
     () => color || HORSE_COLORS[lane % HORSE_COLORS.length],
-    [color, lane]
+    [color, lane],
   );
 
-  // Animate legs
-  useFrame((state) => {
-    if (!groupRef.current) return;
-    const time = state.clock.elapsedTime;
-    const speed = progress > 0 ? 8 : 0;
+  // Clone the scene so each horse is independent
+  const clonedScene = useMemo(() => {
+    const clone = scene.clone(true);
 
-    legRefs.current.forEach((leg, i) => {
-      if (leg) {
-        const offset = (i % 2 === 0 ? 0 : Math.PI) + (i < 2 ? 0 : Math.PI / 2);
-        leg.rotation.x = Math.sin(time * speed + offset) * (stumbling ? 0.15 : 0.4);
+    // Apply unique color to this horse
+    clone.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = false;
+
+        // Clone material so each horse gets its own color
+        if (mesh.material) {
+          const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
+          mat.color = new THREE.Color(horseColor);
+          mesh.material = mat;
+        }
       }
     });
+
+    return clone;
+  }, [scene, horseColor]);
+
+  // Set up animation mixer
+  useEffect(() => {
+    if (animations.length === 0) return;
+
+    const mixer = new THREE.AnimationMixer(clonedScene);
+    mixerRef.current = mixer;
+
+    const clip = animations[0];
+    const action = mixer.clipAction(clip);
+    action.play();
+    actionRef.current = action;
+
+    return () => {
+      mixer.stopAllAction();
+      mixer.uncacheRoot(clonedScene);
+    };
+  }, [animations, clonedScene]);
+
+  // Animate morph targets based on progress
+  useFrame((_, delta) => {
+    if (!mixerRef.current) return;
+
+    // Adjust animation speed based on movement
+    const speed = progress > 0 ? (stumbling ? 0.4 : 1.0) : 0;
+    if (actionRef.current) {
+      actionRef.current.timeScale = speed;
+    }
+
+    mixerRef.current.update(delta);
   });
 
-  const setLegRef = (index: number) => (el: THREE.Mesh | null) => {
-    if (el) legRefs.current[index] = el;
-  };
-
   return (
-    <group ref={groupRef}>
-      {/* Body */}
-      <mesh position={[0, 0.9, 0]} castShadow>
-        <boxGeometry args={[0.5, 0.5, 1.2]} />
-        <meshStandardMaterial color={horseColor} />
-      </mesh>
-
-      {/* Neck */}
-      <mesh position={[0, 1.2, 0.5]} rotation={[0.4, 0, 0]} castShadow>
-        <boxGeometry args={[0.3, 0.6, 0.3]} />
-        <meshStandardMaterial color={horseColor} />
-      </mesh>
-
-      {/* Head */}
-      <mesh position={[0, 1.5, 0.7]} castShadow>
-        <boxGeometry args={[0.25, 0.3, 0.4]} />
-        <meshStandardMaterial color={horseColor} />
-      </mesh>
-
-      {/* Legs — front left, front right, back left, back right */}
-      {[
-        [-0.15, 0.3, 0.35],
-        [0.15, 0.3, 0.35],
-        [-0.15, 0.3, -0.35],
-        [0.15, 0.3, -0.35],
-      ].map((pos, i) => (
-        <mesh
-          key={i}
-          ref={setLegRef(i)}
-          position={pos as [number, number, number]}
-          castShadow
-        >
-          <boxGeometry args={[0.12, 0.6, 0.12]} />
-          <meshStandardMaterial color={horseColor} />
-        </mesh>
-      ))}
-
-      {/* Tail */}
-      <mesh position={[0, 1.0, -0.7]} rotation={[-0.3, 0, 0]}>
-        <boxGeometry args={[0.06, 0.4, 0.06]} />
-        <meshStandardMaterial color={horseColor} />
-      </mesh>
+    <group>
+      {/* Horse model — scaled to ~1.5 units tall, oriented to run along +Z */}
+      <primitive
+        object={clonedScene}
+        ref={meshRef}
+        scale={0.008}
+        rotation={[0, Math.PI, 0]}
+        position={[0, 0, 0]}
+      />
 
       {/* Nameplate */}
-      <Html position={[0, 2.0, 0]} center distanceFactor={15}>
+      <Html position={[0, 1.8, 0]} center distanceFactor={15}>
         <div
           style={{
             background: "rgba(13,26,13,0.85)",

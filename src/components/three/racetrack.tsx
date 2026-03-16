@@ -117,11 +117,6 @@ function Grandstand({ side }: { side: "left" | "right" }) {
           <meshStandardMaterial color="#3a2a1a" />
         </mesh>
       ))}
-      {/* Roof */}
-      <mesh position={[-xSign * 2, 4, 0]}>
-        <boxGeometry args={[6, 0.2, 10]} />
-        <meshStandardMaterial color="#2a1a0a" />
-      </mesh>
       {/* Crowd on each tier */}
       {[0, 1, 2].map((tier) => (
         <Crowd

@@ -76,7 +76,7 @@ export function RaceScene({ race, onComplete }: RaceSceneProps) {
     <div className="relative w-full overflow-hidden rounded-lg" style={{ height: "calc(100vh - 180px)" }}>
       <Canvas
         shadows
-        camera={{ position: [12, 8, -5], fov: 50 }}
+        camera={{ position: [15, 10, -8], fov: 50 }}
         gl={{ antialias: true }}
       >
         <Environment />

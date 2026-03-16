@@ -15,8 +15,8 @@ const RaceScene = dynamic(
     ssr: false,
     loading: () => (
       <div
-        className="flex h-[400px] w-full items-center justify-center rounded-lg"
-        style={{ background: "var(--bg-card)" }}
+        className="flex w-full items-center justify-center rounded-lg"
+        style={{ height: "calc(100vh - 180px)", background: "var(--bg-card)" }}
       >
         <p style={{ color: "var(--text-secondary)" }}>Cargando escena 3D...</p>
       </div>

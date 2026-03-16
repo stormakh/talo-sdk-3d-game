@@ -1,6 +1,6 @@
 import type { Keyframe, HorseResult, RaceResult } from "@/types";
 
-const RACE_DURATION = 17.0; // extra 2s for coast past finish
+const RACE_DURATION = 22.0; // extra 8s for horses to run well past finish
 const DT = 0.1;
 const TOTAL_KEYFRAMES = Math.ceil(RACE_DURATION / DT);
 const WINNER_FINISH_TIME = 14.0;

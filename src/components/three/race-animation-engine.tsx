@@ -24,9 +24,20 @@ function interpolateKeyframes(keyframes: Keyframe[], time: number): HorseState {
     return { progress: 0, lateralOffset: 0, stumbling: false };
   }
 
-  // Clamp to last keyframe
+  // Extrapolate past last keyframe — keep running at last speed
   if (time >= keyframes[keyframes.length - 1].t) {
     const last = keyframes[keyframes.length - 1];
+    if (keyframes.length >= 2) {
+      const prev = keyframes[keyframes.length - 2];
+      const dt = last.t - prev.t;
+      const speed = dt > 0 ? (last.progress - prev.progress) / dt : 0;
+      const elapsed = time - last.t;
+      return {
+        progress: last.progress + speed * elapsed,
+        lateralOffset: last.lateralOffset,
+        stumbling: false,
+      };
+    }
     return {
       progress: last.progress,
       lateralOffset: last.lateralOffset,
@@ -184,8 +195,8 @@ export function RaceAnimationEngine({
       }
     }
 
-    // Check completion
-    if (timeRef.current >= result.durationSeconds + 1 && !completedRef.current) {
+    // Check completion — fire after horses have run well past finish
+    if (timeRef.current >= result.durationSeconds && !completedRef.current) {
       completedRef.current = true;
       onComplete?.();
     }

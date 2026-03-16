@@ -103,7 +103,7 @@ export function Horse({
         object={clonedScene}
         ref={meshRef}
         scale={0.008}
-        rotation={[0, Math.PI, 0]}
+        rotation={[0, 0, 0]}
         position={[0, 0, 0]}
       />
 

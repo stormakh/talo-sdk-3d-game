@@ -14,6 +14,98 @@ function seededRandom(seed: number) {
   return x - Math.floor(x);
 }
 
+// --- Procedural texture generators ---
+
+function createGrassTexture(): THREE.CanvasTexture {
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+
+  // Base green
+  ctx.fillStyle = "#2a5a2a";
+  ctx.fillRect(0, 0, size, size);
+
+  // Scatter grass blades
+  for (let i = 0; i < 8000; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const shade = Math.random();
+    if (shade < 0.3) {
+      ctx.fillStyle = "#1a4a1a";
+    } else if (shade < 0.6) {
+      ctx.fillStyle = "#3a6a2a";
+    } else if (shade < 0.85) {
+      ctx.fillStyle = "#2a5a20";
+    } else {
+      ctx.fillStyle = "#4a7a3a";
+    }
+    ctx.fillRect(x, y, 1 + Math.random() * 2, 1);
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(20, 20);
+  return tex;
+}
+
+function createDirtTexture(): THREE.CanvasTexture {
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+
+  // Base dirt brown
+  ctx.fillStyle = "#5a4030";
+  ctx.fillRect(0, 0, size, size);
+
+  // Scatter soil grain
+  for (let i = 0; i < 6000; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const shade = Math.random();
+    if (shade < 0.25) {
+      ctx.fillStyle = "#4a3020";
+    } else if (shade < 0.5) {
+      ctx.fillStyle = "#6a5040";
+    } else if (shade < 0.75) {
+      ctx.fillStyle = "#5a4535";
+    } else {
+      ctx.fillStyle = "#7a6050";
+    }
+    ctx.fillRect(x, y, 1 + Math.random() * 3, 1 + Math.random() * 2);
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 20);
+  return tex;
+}
+
+function createCheckerboardTexture(): THREE.CanvasTexture {
+  const size = 64;
+  const squares = 8;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+
+  const sq = size / squares;
+  for (let row = 0; row < squares; row++) {
+    for (let col = 0; col < squares; col++) {
+      ctx.fillStyle = (row + col) % 2 === 0 ? "#ffffff" : "#1a1a1a";
+      ctx.fillRect(col * sq, row * sq, sq, sq);
+    }
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(6, 1);
+  return tex;
+}
+
 function Fence({ side }: { side: "left" | "right" }) {
   const x = side === "left" ? -TRACK_WIDTH / 2 - 0.3 : TRACK_WIDTH / 2 + 0.3;
   const posts = useMemo(() => {
@@ -141,18 +233,22 @@ export function Racetrack() {
     return lines;
   }, []);
 
+  const grassTex = useMemo(() => createGrassTexture(), []);
+  const dirtTex = useMemo(() => createDirtTexture(), []);
+  const checkerTex = useMemo(() => createCheckerboardTexture(), []);
+
   return (
     <group>
-      {/* Ground plane — grass */}
+      {/* Ground plane — grass with texture */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, TRACK_LENGTH / 2]} receiveShadow>
         <planeGeometry args={[100, 100]} />
-        <meshStandardMaterial color="#1a3a1a" />
+        <meshStandardMaterial map={grassTex} />
       </mesh>
 
-      {/* Track surface — dirt */}
+      {/* Track surface — dirt with texture */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, TRACK_LENGTH / 2]} receiveShadow>
         <planeGeometry args={[TRACK_WIDTH, TRACK_LENGTH + 4]} />
-        <meshStandardMaterial color="#4a3a2a" />
+        <meshStandardMaterial map={dirtTex} />
       </mesh>
 
       {/* Lane lines */}
@@ -169,14 +265,14 @@ export function Racetrack() {
 
       {/* Start line */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 0]}>
-        <planeGeometry args={[TRACK_WIDTH, 0.15]} />
+        <planeGeometry args={[TRACK_WIDTH, 0.3]} />
         <meshStandardMaterial color="#ffffff" />
       </mesh>
 
-      {/* Finish line */}
+      {/* Finish line — checkerboard */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, TRACK_LENGTH]}>
-        <planeGeometry args={[TRACK_WIDTH, 0.15]} />
-        <meshStandardMaterial color="#c8a84e" />
+        <planeGeometry args={[TRACK_WIDTH, 0.5]} />
+        <meshStandardMaterial map={checkerTex} />
       </mesh>
 
       <Fence side="left" />

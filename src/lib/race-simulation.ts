@@ -132,7 +132,6 @@ export function simulateRace(
 
   // 4. Normalize progress so each horse reaches 1.0 at its target finish time,
   //    then coasts past with deceleration.
-  const COAST_EXTRA = 0.08; // how far past 1.0 they coast
   const result: HorseResult[] = horses.map(
     ({ slotId, finishPosition, rawKeyframes, targetFinishTime }) => {
       const finishIndex = Math.min(
@@ -144,23 +143,13 @@ export function simulateRace(
       const scale =
         rawProgressAtFinish > 0 ? 1.0 / rawProgressAtFinish : 1.0;
 
-      const keyframes: Keyframe[] = rawKeyframes.map((kf) => {
-        const scaled = kf.progress * scale;
-        let progress: number;
-        if (scaled <= 1.0) {
-          progress = scaled;
-        } else {
-          // Coast past finish with deceleration (ease-out)
-          const overshoot = scaled - 1.0;
-          progress = 1.0 + COAST_EXTRA * (1 - Math.exp(-overshoot * 8));
-        }
-        return {
-          t: kf.t,
-          progress,
-          lateralOffset: kf.lateralOffset,
-          stumbling: kf.stumbling,
-        };
-      });
+      const keyframes: Keyframe[] = rawKeyframes.map((kf) => ({
+        t: kf.t,
+        // Let progress exceed 1.0 freely — horses keep running past finish
+        progress: kf.progress * scale,
+        lateralOffset: kf.lateralOffset,
+        stumbling: kf.stumbling,
+      }));
 
       return { slotId, finishPosition, keyframes };
     }

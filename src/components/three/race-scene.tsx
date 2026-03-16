@@ -60,9 +60,9 @@ export function RaceScene({ race, onComplete }: RaceSceneProps) {
   }, [result]);
 
   const handleComplete = useCallback(() => {
-    setPhase("finished");
-    // Delay before showing results
-    setTimeout(() => onComplete?.(), 2000);
+    // Delay before showing finished overlay — let horses run off
+    setTimeout(() => setPhase("finished"), 3000);
+    setTimeout(() => onComplete?.(), 4000);
   }, [onComplete]);
 
   const handleReplay = useCallback(() => {
@@ -81,9 +81,9 @@ export function RaceScene({ race, onComplete }: RaceSceneProps) {
       >
         <Environment />
         <Racetrack />
-        <CameraController raceTime={raceTime} leadProgress={leadProgress} racing={phase === "racing"} />
+        <CameraController raceTime={raceTime} leadProgress={leadProgress} racing={phase === "racing" || phase === "finished"} />
 
-        {phase === "racing" && (
+        {(phase === "racing" || phase === "finished") && (
           <RaceAnimationEngine
             result={result}
             slotsInfo={slotsInfo}

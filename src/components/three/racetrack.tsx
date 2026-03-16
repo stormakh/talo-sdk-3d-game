@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 
-const TRACK_LENGTH = 50;
+const TRACK_LENGTH = 120;
 const TRACK_WIDTH = 12;
 const FENCE_HEIGHT = 1.2;
 

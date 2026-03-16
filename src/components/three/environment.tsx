@@ -20,7 +20,7 @@ export function Environment() {
       />
 
       {/* Fog — lighter to match sky */}
-      <fog attach="fog" args={["#87CEEB", 40, 120]} />
+      <fog attach="fog" args={["#87CEEB", 60, 200]} />
 
       {/* Ambient light — warm to match afternoon sun */}
       <ambientLight intensity={0.5} color="#ffe8c0" />

@@ -88,7 +88,7 @@ export function Horse({
     if (!mixerRef.current) return;
 
     // Adjust animation speed based on movement
-    const speed = progress > 0 ? (stumbling ? 0.4 : 1.0) : 0;
+    const speed = progress > 0 ? (stumbling ? 1.5 : 3.0) : 0;
     if (actionRef.current) {
       actionRef.current.timeScale = speed;
     }

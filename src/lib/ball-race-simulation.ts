@@ -269,6 +269,8 @@ export function simulateBallRace(
     let rotation = 0;
     let finished = false;
     let finishTime = RACE_DURATION;
+    let stallCounter = 0;
+    let lastProgressY = 0;
 
     const keyframes: BallKeyframe[] = [];
 
@@ -289,49 +291,52 @@ export function simulateBallRace(
         x += vx * DT;
         y += vy * DT;
 
-        // --- Collisions (only check nearby obstacles for performance) ---
-        for (const peg of course.pegs) {
+        // --- Collisions (only check nearby obstacles) ---
+        // Max 1 collision per frame to prevent multi-hit chaos
+        let collided = false;
+
+        if (!collided) for (const peg of course.pegs) {
           if (Math.abs(peg.y - y) > 30) continue;
           const r = handlePeg(x, y, vx, vy, peg);
-          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
+          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; collided = true; break; }
         }
-        for (const bumper of course.bumpers) {
+        if (!collided) for (const bumper of course.bumpers) {
           if (Math.abs(bumper.y - y) > 50) continue;
           const r = handleBumper(x, y, vx, vy, bumper);
-          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
+          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; collided = true; break; }
         }
-        for (const ring of course.rings) {
+        if (!collided) for (const ring of course.rings) {
           if (Math.abs(ring.y - y) > ring.outerRadius + 20) continue;
           const r = handleRing(x, y, vx, vy, ring);
-          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
+          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; collided = true; break; }
         }
-        for (const spinner of course.spinners) {
+        if (!collided) for (const spinner of course.spinners) {
           if (Math.abs(spinner.y - y) > spinner.radius + 20) continue;
           const r = handleSpinner(x, y, vx, vy, spinner);
-          if (r) { vx = r.vx; vy = r.vy; }
+          if (r) { vx = r.vx; vy = r.vy; break; }
         }
-        for (const gap of course.gaps) {
+        if (!collided) for (const gap of course.gaps) {
           if (Math.abs(gap.y - y) > 20) continue;
           const r = handleGap(x, y, vx, vy, gap);
-          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
+          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; collided = true; break; }
         }
         for (const funnel of course.funnels) {
           const r = handleFunnel(x, y, vx, funnel);
           if (r) { vx = r.vx; }
         }
-        for (const ramp of course.ramps) {
+        if (!collided) for (const ramp of course.ramps) {
           if (Math.abs(Math.min(ramp.y1, ramp.y2) - y) > 40) continue;
           const r = handleRamp(x, y, vx, vy, ramp);
-          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
+          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; collided = true; break; }
         }
-        for (const pad of course.bouncePads) {
+        if (!collided) for (const pad of course.bouncePads) {
           if (Math.abs(pad.y - y) > 20) continue;
           const r = handleBouncePad(x, y, vx, vy, pad);
-          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
+          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; collided = true; break; }
         }
-        for (const bucket of course.buckets) {
+        if (!collided) for (const bucket of course.buckets) {
           const r = handleBucket(x, y, vx, vy, bucket);
-          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
+          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; collided = true; break; }
         }
 
         // Wall boundaries
@@ -344,14 +349,31 @@ export function simulateBallRace(
           vx = -Math.abs(vx) * 0.5;
         }
 
-        // CRITICAL: enforce minimum downward velocity so balls never get stuck
-        if (vy < MIN_DOWNWARD_VY) {
-          vy = MIN_DOWNWARD_VY;
+        // Cap velocities
+        vx = clamp(vx, -150, 150);
+        vy = clamp(vy, -100, 350);
+
+        // Anti-stall: if ball hasn't progressed 10 units in 15 frames, force it down
+        if (i % 15 === 0) {
+          if (y - lastProgressY < 10) {
+            stallCounter++;
+            if (stallCounter >= 2) {
+              // Teleport ball past the blockage
+              y += 40;
+              vy = MIN_DOWNWARD_VY * 2;
+              vx = (ballRng() - 0.5) * 40;
+              stallCounter = 0;
+            }
+          } else {
+            stallCounter = 0;
+          }
+          lastProgressY = y;
         }
 
-        // Cap velocities to prevent tunneling through obstacles
-        vx = clamp(vx, -150, 150);
-        vy = clamp(vy, -100, 350); // allow decent upward bounce, fast downward
+        // Ensure ball always has some downward momentum
+        if (vy < MIN_DOWNWARD_VY) {
+          vy += (MIN_DOWNWARD_VY - vy) * 0.3; // gradually restore, don't snap
+        }
 
         rotation += (vx * DT) / BALL_RADIUS;
 

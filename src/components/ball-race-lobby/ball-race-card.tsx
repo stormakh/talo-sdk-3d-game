@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { BorderBeam } from "@/components/ui/border-beam";
 
-type RaceCardProps = {
+type BallRaceCardProps = {
   id: string;
   size: number;
   confirmedSlots: number;
@@ -12,7 +12,7 @@ type RaceCardProps = {
 
 function timeAgo(dateStr: string): string {
   const seconds = Math.floor(
-    (Date.now() - new Date(dateStr).getTime()) / 1000
+    (Date.now() - new Date(dateStr).getTime()) / 1000,
   );
   if (seconds < 60) return "recien";
   const minutes = Math.floor(seconds / 60);
@@ -22,17 +22,17 @@ function timeAgo(dateStr: string): string {
   return `hace ${Math.floor(hours / 24)}d`;
 }
 
-export function RaceCard({
+export function BallRaceCard({
   id,
   size,
   confirmedSlots,
   createdAt,
-}: RaceCardProps) {
+}: BallRaceCardProps) {
   const fillPercent = Math.round((confirmedSlots / size) * 100);
 
   return (
     <Link
-      href={`/horse-race/race/${id}`}
+      href={`/ball-race/race/${id}`}
       className="group relative block min-w-[220px] shrink-0 overflow-hidden rounded-lg border p-5 transition-colors hover:border-[var(--border-gold)]"
       style={{
         background: "var(--bg-card)",
@@ -48,7 +48,7 @@ export function RaceCard({
         className="opacity-0 transition-opacity group-hover:opacity-100"
       />
 
-      <p className="label mb-1">Derby</p>
+      <p className="label mb-1">Ball Race</p>
       <h3
         className="mb-3 text-lg"
         style={{
@@ -56,10 +56,9 @@ export function RaceCard({
           color: "var(--text-primary)",
         }}
       >
-        Carrera de {size}
+        Partida de {size}
       </h3>
 
-      {/* Progress bar */}
       <div
         className="mb-2 h-2 w-full overflow-hidden rounded-full"
         style={{ background: "var(--bg-surface)" }}
@@ -75,10 +74,16 @@ export function RaceCard({
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
-          {confirmedSlots}/{size} caballos
+        <span
+          className="text-sm"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          {confirmedSlots}/{size} bolas
         </span>
-        <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
+        <span
+          className="text-xs"
+          style={{ color: "var(--text-secondary)" }}
+        >
           {timeAgo(createdAt)}
         </span>
       </div>

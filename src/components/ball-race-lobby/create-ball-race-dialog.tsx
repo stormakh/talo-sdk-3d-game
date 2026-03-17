@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const SIZES = [4, 6, 8, 10] as const;
+const SIZES = [4, 8, 12, 16] as const;
 
-export function CreateRaceDialog({
+export function CreateBallRaceDialog({
   open,
   onClose,
 }: {
@@ -13,30 +13,25 @@ export function CreateRaceDialog({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const [selectedSize, setSelectedSize] = useState<number>(6);
+  const [selectedSize, setSelectedSize] = useState<number>(8);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!open) return null;
 
   async function handleCreate() {
-    console.log("[CreateRaceDialog] handleCreate called, size:", selectedSize);
     setCreating(true);
     try {
-      console.log("[CreateRaceDialog] Sending POST /api/races...");
-      const res = await fetch("/api/races", {
+      const res = await fetch("/api/ball-race", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ size: selectedSize }),
       });
-      console.log("[CreateRaceDialog] Response status:", res.status);
       const race = await res.json();
-      console.log("[CreateRaceDialog] Response body:", JSON.stringify(race));
-      if (!res.ok) throw new Error(race.error || "Error al crear la carrera");
-      console.log("[CreateRaceDialog] Navigating to /race/" + race.id);
-      router.push(`/horse-race/race/${race.id}`);
+      if (!res.ok)
+        throw new Error(race.error || "Error al crear la partida");
+      router.push(`/ball-race/race/${race.id}`);
     } catch (err) {
-      console.error("[CreateRaceDialog] Error:", err);
       setError(err instanceof Error ? err.message : "Algo salio mal");
       setCreating(false);
     }
@@ -58,12 +53,18 @@ export function CreateRaceDialog({
       >
         <h2
           className="mb-1 text-2xl"
-          style={{ fontFamily: "var(--font-serif)", color: "var(--text-primary)" }}
+          style={{
+            fontFamily: "var(--font-serif)",
+            color: "var(--text-primary)",
+          }}
         >
-          Crear una Carrera
+          Crear Ball Race
         </h2>
-        <p className="mb-6 text-sm" style={{ color: "var(--text-secondary)" }}>
-          Elegi cuantos caballos van a competir.
+        <p
+          className="mb-6 text-sm"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          Elegi cuantas bolas van a competir.
         </p>
 
         <div className="mb-6 grid grid-cols-4 gap-2">
@@ -74,9 +75,13 @@ export function CreateRaceDialog({
               className="cursor-pointer rounded py-3 text-center text-sm font-semibold transition-colors"
               style={{
                 background:
-                  selectedSize === size ? "var(--text-gold)" : "var(--bg-surface)",
+                  selectedSize === size
+                    ? "var(--text-gold)"
+                    : "var(--bg-surface)",
                 color:
-                  selectedSize === size ? "var(--bg-deep)" : "var(--text-primary)",
+                  selectedSize === size
+                    ? "var(--bg-deep)"
+                    : "var(--text-primary)",
                 border:
                   selectedSize === size
                     ? "1px solid var(--text-gold)"
@@ -89,7 +94,10 @@ export function CreateRaceDialog({
         </div>
 
         {error && (
-          <p className="mb-4 text-sm text-center" style={{ color: "#ef4444" }}>
+          <p
+            className="mb-4 text-center text-sm"
+            style={{ color: "#ef4444" }}
+          >
             {error}
           </p>
         )}

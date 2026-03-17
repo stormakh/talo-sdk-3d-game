@@ -6,7 +6,7 @@ export function RegistrationBanner() {
   return (
     <div className="px-6 py-4">
       <a
-        href="/register"
+        href="/horse-race/register"
         className="relative mx-auto block max-w-2xl overflow-hidden rounded-lg border p-4 text-center transition-colors"
         style={{
           background: "var(--bg-card)",

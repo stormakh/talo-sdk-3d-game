@@ -88,7 +88,7 @@ export default function RegisterPage() {
   return (
     <div className="flex min-h-screen flex-col items-center px-6 py-12">
       <a
-        href="/"
+        href="/horse-race"
         className="mb-8 self-start text-sm transition-colors"
         style={{ color: "var(--text-secondary)" }}
       >
@@ -272,7 +272,7 @@ export default function RegisterPage() {
             <span style={{ color: "var(--text-gold)" }}>@{state.xHandle}</span>
           </p>
           <a
-            href="/"
+            href="/horse-race"
             className="mt-4 rounded border px-6 py-2 text-sm tracking-wider uppercase transition-colors"
             style={{
               borderColor: "var(--border-gold)",

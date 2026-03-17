@@ -160,7 +160,7 @@ export function RacePageClient({
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-4">
         <a
-          href="/"
+          href="/horse-race"
           className="text-sm transition-colors"
           style={{ color: "var(--text-secondary)" }}
         >

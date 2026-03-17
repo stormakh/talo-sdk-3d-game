@@ -1,7 +1,16 @@
 import { db } from "@/lib/db";
-import { races, slots, leaderboard, registrations } from "@/lib/db/schema";
+import {
+  races,
+  slots,
+  leaderboard,
+  registrations,
+  ballRaces,
+  ballSlots,
+  ballLeaderboard,
+} from "@/lib/db/schema";
 import { getTalo } from "@/lib/talo";
 import { simulateRace } from "@/lib/race-simulation";
+import { simulateBallRace } from "@/lib/ball-race-simulation";
 import { emitRaceEvent } from "@/lib/race-events";
 import { eq, sql } from "drizzle-orm";
 import type { TaloTransaction } from "@/types";
@@ -265,6 +274,194 @@ async function handleRegistrationPayment(
     .where(eq(leaderboard.cuit, validTxCuit));
 }
 
+// ---------------------------------------------------------------------------
+// Ball Race payment handling
+// ---------------------------------------------------------------------------
+
+async function computeBallRace(raceId: string) {
+  const confirmedBallSlots = await db
+    .select()
+    .from(ballSlots)
+    .where(
+      sql`${ballSlots.raceId} = ${raceId} and ${ballSlots.paymentStatus} = 'confirmed'`,
+    );
+
+  if (confirmedBallSlots.length === 0) return;
+
+  const [race] = await db
+    .select()
+    .from(ballRaces)
+    .where(eq(ballRaces.id, raceId))
+    .limit(1);
+
+  if (!race || !race.obstaclesSeed) return;
+
+  const simulation = simulateBallRace(
+    confirmedBallSlots.map((s) => ({ id: s.id, ballIndex: s.ballIndex })),
+    race.obstaclesSeed,
+  );
+
+  for (const ball of simulation.balls) {
+    await db
+      .update(ballSlots)
+      .set({ finishPosition: ball.finishPosition })
+      .where(eq(ballSlots.id, ball.slotId));
+  }
+
+  await db
+    .update(ballRaces)
+    .set({
+      status: "finished",
+      result: simulation as unknown as Record<string, unknown>,
+      finishedAt: new Date(),
+    })
+    .where(eq(ballRaces.id, raceId));
+
+  const raceSize = race.size;
+
+  for (const slot of confirmedBallSlots) {
+    const ball = simulation.balls.find((b) => b.slotId === slot.id);
+    if (!ball) continue;
+
+    const isWinner = ball.finishPosition === 1;
+    const pointsToAdd = isWinner ? raceSize - 1 : 0;
+
+    await db
+      .insert(ballLeaderboard)
+      .values({
+        cuit: slot.cuit ?? `unknown_${slot.id}`,
+        displayName: slot.displayName,
+        avatarUrl: slot.avatarUrl,
+        totalPoints: pointsToAdd,
+        racesWon: isWinner ? 1 : 0,
+        racesPlayed: 1,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: ballLeaderboard.cuit,
+        set: {
+          displayName: slot.displayName,
+          avatarUrl: slot.avatarUrl,
+          totalPoints: sql`${ballLeaderboard.totalPoints} + ${pointsToAdd}`,
+          racesWon: sql`${ballLeaderboard.racesWon} + ${isWinner ? 1 : 0}`,
+          racesPlayed: sql`${ballLeaderboard.racesPlayed} + 1`,
+          updatedAt: new Date(),
+        },
+      });
+  }
+
+  const finishedBallSlots = await db
+    .select()
+    .from(ballSlots)
+    .where(eq(ballSlots.raceId, raceId));
+
+  emitRaceEvent({
+    type: "race_finished",
+    raceId,
+    payload: {
+      ...race,
+      result: simulation,
+      status: "finished",
+      slots: finishedBallSlots.map((s) => stripCuit(s)),
+    },
+  });
+}
+
+async function handleBallRacePayment(
+  raceId: string,
+  transactions: TaloTransaction[],
+) {
+  const [race] = await db
+    .select()
+    .from(ballRaces)
+    .where(eq(ballRaces.id, raceId))
+    .limit(1);
+
+  if (!race || race.status !== "waiting") return;
+
+  const existingBallSlots = await db
+    .select()
+    .from(ballSlots)
+    .where(eq(ballSlots.raceId, raceId));
+
+  let currentSlotCount = existingBallSlots.length;
+
+  for (let txIndex = 0; txIndex < transactions.length; txIndex++) {
+    const tx = transactions[txIndex];
+    const txAmount = Math.floor(Number(tx.amount ?? 0));
+    const processed = tx.transaction_data?.PROCESSED;
+    const txCuit = processed?.senderCuit ?? null;
+    const beneficiaryName = processed?.senderTitular ?? "Anon";
+
+    if (txAmount <= 0) continue;
+
+    let displayName = extractLastName(beneficiaryName);
+    let xHandle: string | null = null;
+    let avatarUrl: string | null = null;
+
+    if (txCuit) {
+      const [reg] = await db
+        .select()
+        .from(registrations)
+        .where(
+          sql`${registrations.cuit} = ${txCuit} and ${registrations.status} = 'confirmed'`,
+        )
+        .limit(1);
+
+      if (reg) {
+        displayName = reg.xHandle;
+        xHandle = reg.xHandle;
+        avatarUrl = reg.avatarUrl;
+      }
+    }
+
+    const slotsToCreate = Math.min(txAmount, race.size - currentSlotCount);
+
+    for (let j = 0; j < slotsToCreate; j++) {
+      const ref = `ballrace_${raceId}_tx_${txIndex}_slot_${j}`;
+
+      const [existing] = await db
+        .select({ id: ballSlots.id })
+        .from(ballSlots)
+        .where(eq(ballSlots.transactionRef, ref))
+        .limit(1);
+
+      if (existing) continue;
+
+      const slotDisplayName =
+        slotsToCreate > 1 ? `${displayName} (${j + 1})` : displayName;
+
+      const ballIndex = currentSlotCount + 1;
+
+      const [newSlot] = await db
+        .insert(ballSlots)
+        .values({
+          raceId,
+          ballIndex,
+          displayName: slotDisplayName,
+          xHandle,
+          avatarUrl,
+          cuit: txCuit,
+          transactionRef: ref,
+          paymentStatus: "confirmed",
+        })
+        .returning();
+
+      currentSlotCount++;
+
+      emitRaceEvent({
+        type: "player_joined",
+        raceId,
+        payload: { slot: stripCuit(newSlot) },
+      });
+    }
+  }
+
+  if (currentSlotCount >= race.size) {
+    await computeBallRace(raceId);
+  }
+}
+
 let _webhookHandler: (request: Request) => Promise<Response>;
 
 function getWebhookHandler(): (request: Request) => Promise<Response> {
@@ -289,6 +486,12 @@ function getWebhookHandler(): (request: Request) => Promise<Response> {
     const raceMatch = externalId.match(/^race_(.+)$/);
     if (raceMatch) {
       await handleRacePayment(raceMatch[1], transactions);
+      return;
+    }
+
+    const ballRaceMatch = externalId.match(/^ballrace_(.+)$/);
+    if (ballRaceMatch) {
+      await handleBallRacePayment(ballRaceMatch[1], transactions);
       return;
     }
 

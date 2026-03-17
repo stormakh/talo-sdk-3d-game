@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { CreateRaceDialog } from "./create-race-dialog";
+import { CreateBallRaceDialog } from "./create-ball-race-dialog";
 
-export function Navbar() {
+export function BallRaceNavbar() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   return (
@@ -11,19 +11,23 @@ export function Navbar() {
       <nav
         className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 backdrop-blur-sm"
         style={{
-          background: "linear-gradient(to bottom, var(--bg-deep), rgba(13,26,13,0.8))",
+          background:
+            "linear-gradient(to bottom, var(--bg-deep), rgba(13,26,13,0.8))",
           borderBottom: "1px solid rgba(200,168,78,0.1)",
         }}
       >
-        <a href="/horse-race" className="flex items-center gap-2">
+        <a href="/ball-race" className="flex items-center gap-2">
           <span className="text-lg" aria-hidden>
-            🏇
+            🎱
           </span>
           <span
             className="text-xl tracking-wide"
-            style={{ fontFamily: "var(--font-serif)", color: "var(--text-gold)" }}
+            style={{
+              fontFamily: "var(--font-serif)",
+              color: "var(--text-gold)",
+            }}
           >
-            The Derby Club
+            Ball Race
           </span>
         </a>
 
@@ -36,11 +40,11 @@ export function Navbar() {
             letterSpacing: "2px",
           }}
         >
-          Crear Carrera
+          Crear Partida
         </button>
       </nav>
 
-      <CreateRaceDialog
+      <CreateBallRaceDialog
         open={showCreateDialog}
         onClose={() => setShowCreateDialog(false)}
       />

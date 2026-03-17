@@ -11,12 +11,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "The Derby Club | Carreras de Caballos 3D",
+  title: "Talo Games | Showcase",
   description:
-    "Crea o unite a carreras de caballos en 3D, transferi y mira la accion en vivo.",
+    "Experiencias interactivas que muestran las capacidades de Talo Pay.",
   openGraph: {
-    title: "The Derby Club",
-    description: "Carreras de caballos en 3D. Crea un derby, transferi y corré.",
+    title: "Talo Games",
+    description: "Juegos interactivos con pagos en tiempo real, powered by Talo Pay.",
     type: "website",
   },
 };

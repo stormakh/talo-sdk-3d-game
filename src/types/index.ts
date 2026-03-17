@@ -80,3 +80,50 @@ export type Registration = {
   status: "pending" | "confirmed";
   createdAt: Date;
 };
+
+// Ball Race types
+
+export type BallKeyframe = {
+  t: number;
+  x: number;
+  y: number;
+  rotation: number;
+};
+
+export type BallResult = {
+  slotId: number;
+  finishPosition: number;
+  keyframes: BallKeyframe[];
+};
+
+export type BallRaceResult = {
+  durationSeconds: number;
+  balls: BallResult[];
+  obstaclesSeed: string;
+};
+
+export type BallSlotWithPosition = {
+  id: number;
+  raceId: string;
+  ballIndex: number;
+  displayName: string;
+  xHandle: string | null;
+  avatarUrl: string | null;
+  paymentStatus: string;
+  finishPosition: number | null;
+  createdAt: Date;
+};
+
+export type BallRaceWithSlots = {
+  id: string;
+  size: number;
+  status: string;
+  result: BallRaceResult | null;
+  obstaclesSeed: string | null;
+  paymentId: string | null;
+  paymentAlias: string | null;
+  paymentCvu: string | null;
+  createdAt: Date;
+  finishedAt: Date | null;
+  slots: BallSlotWithPosition[];
+};

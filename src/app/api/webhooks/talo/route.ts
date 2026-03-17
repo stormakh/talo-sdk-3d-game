@@ -272,6 +272,16 @@ async function handleRegistrationPayment(
       updatedAt: new Date(),
     })
     .where(eq(leaderboard.cuit, validTxCuit));
+
+  // Update any existing race slots with this cuit to show the registered handle
+  await db
+    .update(slots)
+    .set({
+      displayName: reg.xHandle,
+      xHandle: reg.xHandle,
+      avatarUrl: reg.avatarUrl,
+    })
+    .where(eq(slots.cuit, validTxCuit));
 }
 
 // ---------------------------------------------------------------------------

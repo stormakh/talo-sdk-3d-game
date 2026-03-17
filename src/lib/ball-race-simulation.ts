@@ -16,19 +16,18 @@ import {
 } from "@/components/ball-race/ball-race-obstacles";
 import { createRngFromString } from "@/lib/seeded-random";
 
-// Course is 5000 units tall. We want the winner to finish in ~28s.
-// Without obstacles: y = 0.5 * g * t² → g = 2 * 5000 / 28² ≈ 12.76
-// With obstacles slowing things down, we need higher gravity.
-// We use ~18 and rely on a minimum downward velocity to prevent stalling.
-const RACE_DURATION = 35.0;
+// Course is 5000 units tall. Target: winner finishes in ~25s.
+// Average speed needed: 5000/25 = 200 px/s.
+// With obstacles causing bounces, we need gravity that sustains ~200 px/s average.
+// Terminal velocity (where gravity = drag from obstacles) should be ~250-300 px/s.
+const RACE_DURATION = 32.0;
 const DT = 0.04;
-const TOTAL_KEYFRAMES = Math.ceil(RACE_DURATION / DT);
-const WINNER_FINISH_TIME = 28.0;
-const GRAVITY = 18; // tuned so balls traverse 5000 units in ~28s with obstacles
-const FRICTION = 0.99;
-const BOUNCE_DAMPING = 0.65; // preserve more energy per bounce
+const TOTAL_KEYFRAMES = Math.ceil(RACE_DURATION / DT); // 800
+const GRAVITY = 400; // strong gravity — units are px/s²
+const FRICTION = 0.97;
+const BOUNCE_DAMPING = 0.65;
 const WALL_MARGIN = 25;
-const MIN_DOWNWARD_VY = 15; // balls always fall at least this fast — prevents stalling
+const MIN_DOWNWARD_VY = 60; // balls always fall at least this fast — prevents stalling
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -247,8 +246,8 @@ export function simulateBallRace(
   // Gravity modifier per position: 1st place gets slightly more gravity
   const gravityBySlot = new Map<number, number>();
   for (let i = 0; i < N; i++) {
-    // 1st place: 1.0, last place: ~0.85
-    const factor = 1.0 - i * (0.15 / Math.max(N - 1, 1));
+    // 1st place: 1.0, last place: ~0.88 — small spread so race is competitive
+    const factor = 1.0 - i * (0.12 / Math.max(N - 1, 1));
     gravityBySlot.set(finishOrder[i].id, GRAVITY * factor);
   }
 
@@ -350,9 +349,9 @@ export function simulateBallRace(
           vy = MIN_DOWNWARD_VY;
         }
 
-        // Cap velocities to prevent tunneling
-        vx = clamp(vx, -60, 60);
-        vy = clamp(vy, -30, 80); // allow small upward bounce but limited
+        // Cap velocities to prevent tunneling through obstacles
+        vx = clamp(vx, -150, 150);
+        vy = clamp(vy, -100, 350); // allow decent upward bounce, fast downward
 
         rotation += (vx * DT) / BALL_RADIUS;
 

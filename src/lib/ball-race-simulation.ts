@@ -16,14 +16,19 @@ import {
 } from "@/components/ball-race/ball-race-obstacles";
 import { createRngFromString } from "@/lib/seeded-random";
 
+// Course is 5000 units tall. We want the winner to finish in ~28s.
+// Without obstacles: y = 0.5 * g * t² → g = 2 * 5000 / 28² ≈ 12.76
+// With obstacles slowing things down, we need higher gravity.
+// We use ~18 and rely on a minimum downward velocity to prevent stalling.
 const RACE_DURATION = 35.0;
-const DT = 0.04; // 40ms per keyframe
+const DT = 0.04;
 const TOTAL_KEYFRAMES = Math.ceil(RACE_DURATION / DT);
 const WINNER_FINISH_TIME = 28.0;
-const GRAVITY = 280;
-const FRICTION = 0.985;
-const BOUNCE_DAMPING = 0.55;
+const GRAVITY = 18; // tuned so balls traverse 5000 units in ~28s with obstacles
+const FRICTION = 0.99;
+const BOUNCE_DAMPING = 0.65; // preserve more energy per bounce
 const WALL_MARGIN = 25;
+const MIN_DOWNWARD_VY = 15; // balls always fall at least this fast — prevents stalling
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -46,160 +51,136 @@ function clamp(v: number, min: number, max: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// Collision handlers
+// Collision handlers — return new state or null if no collision
 // ---------------------------------------------------------------------------
 
 type Vec = { x: number; y: number; vx: number; vy: number };
 
 function deflectFromCircle(
-  x: number,
-  y: number,
-  vx: number,
-  vy: number,
-  cx: number,
-  cy: number,
-  minDist: number,
-  damping: number,
+  x: number, y: number, vx: number, vy: number,
+  cx: number, cy: number, minDist: number, damping: number,
 ): Vec | null {
   const d = dist(x, y, cx, cy);
-  if (d < minDist && d > 0) {
+  if (d < minDist && d > 0.1) {
     const nx = (x - cx) / d;
     const ny = (y - cy) / d;
     const dot = vx * nx + vy * ny;
-    return {
-      x: cx + nx * minDist,
-      y: cy + ny * minDist,
-      vx: (vx - 2 * dot * nx) * damping,
-      vy: (vy - 2 * dot * ny) * damping,
-    };
-  }
-  return null;
-}
-
-function handlePeg(
-  x: number, y: number, vx: number, vy: number, peg: Peg,
-): Vec | null {
-  return deflectFromCircle(x, y, vx, vy, peg.x, peg.y, BALL_RADIUS + peg.radius, BOUNCE_DAMPING);
-}
-
-function handleBumper(
-  x: number, y: number, vx: number, vy: number, bumper: Bumper,
-): Vec | null {
-  const r = deflectFromCircle(x, y, vx, vy, bumper.x, bumper.y, BALL_RADIUS + bumper.radius, 1.0);
-  if (r) {
-    // Bumpers add extra velocity outward
-    const d = dist(x, y, bumper.x, bumper.y);
-    const nx = (x - bumper.x) / (d || 1);
-    const ny = (y - bumper.y) / (d || 1);
-    r.vx += nx * bumper.strength * 80;
-    r.vy += ny * bumper.strength * 80;
-  }
-  return r;
-}
-
-function handleRing(
-  x: number, y: number, vx: number, vy: number, ring: Ring,
-): Vec | null {
-  const d = dist(x, y, ring.x, ring.y);
-  // Bounce off outer edge
-  if (d > ring.outerRadius - BALL_RADIUS && d < ring.outerRadius + BALL_RADIUS) {
-    return deflectFromCircle(x, y, vx, vy, ring.x, ring.y, ring.outerRadius + BALL_RADIUS, BOUNCE_DAMPING);
-  }
-  // Bounce off inner edge (if inside the ring donut)
-  if (d < ring.innerRadius + BALL_RADIUS && d > 0) {
-    // Push outward from center
-    const nx = (x - ring.x) / d;
-    const ny = (y - ring.y) / d;
-    const dot = vx * nx + vy * ny;
-    return {
-      x: ring.x + nx * (ring.innerRadius + BALL_RADIUS),
-      y: ring.y + ny * (ring.innerRadius + BALL_RADIUS),
-      vx: (vx - 2 * dot * nx) * BOUNCE_DAMPING,
-      vy: (vy - 2 * dot * ny) * BOUNCE_DAMPING,
-    };
-  }
-  return null;
-}
-
-function handleSpinner(
-  x: number, y: number, vx: number, vy: number, spinner: Spinner,
-): { vx: number; vy: number } | null {
-  const d = dist(x, y, spinner.x, spinner.y);
-  if (d < BALL_RADIUS + spinner.radius) {
-    const angle = Math.atan2(y - spinner.y, x - spinner.x);
-    const tangentAngle = angle + (Math.PI / 2) * spinner.direction;
-    const force = spinner.speed * 50;
-    return {
-      vx: vx + Math.cos(tangentAngle) * force * DT,
-      vy: vy + Math.sin(tangentAngle) * force * DT,
-    };
-  }
-  return null;
-}
-
-function handleGap(
-  x: number, y: number, vx: number, vy: number, gap: Gap,
-): Vec | null {
-  if (Math.abs(y - gap.y) < BALL_RADIUS + gap.wallHeight / 2) {
-    const inOpening = x > gap.openingX && x < gap.openingX + gap.openingWidth;
-    if (!inOpening) {
+    if (dot < 0) {
+      // Only deflect if moving toward the obstacle
       return {
-        x,
-        y: gap.y - BALL_RADIUS - gap.wallHeight / 2,
-        vx: vx * 0.8,
-        vy: -Math.abs(vy) * BOUNCE_DAMPING,
+        x: cx + nx * (minDist + 0.5),
+        y: cy + ny * (minDist + 0.5),
+        vx: (vx - 2 * dot * nx) * damping,
+        vy: (vy - 2 * dot * ny) * damping,
       };
     }
   }
   return null;
 }
 
-function handleFunnel(
-  x: number, y: number, vx: number, funnel: Funnel,
-): { vx: number } | null {
-  if (y > funnel.y && y < funnel.y + funnel.height) {
-    const progress = (y - funnel.y) / funnel.height;
-    const currentWidth =
-      funnel.topWidth + (funnel.bottomWidth - funnel.topWidth) * progress;
-    const leftEdge = funnel.centerX - currentWidth / 2;
-    const rightEdge = funnel.centerX + currentWidth / 2;
-    if (x < leftEdge) return { vx: vx + 100 * DT };
-    if (x > rightEdge) return { vx: vx - 100 * DT };
-    return { vx: vx + (funnel.centerX - x) * 0.6 * DT };
+function handlePeg(x: number, y: number, vx: number, vy: number, peg: Peg): Vec | null {
+  return deflectFromCircle(x, y, vx, vy, peg.x, peg.y, BALL_RADIUS + peg.radius, BOUNCE_DAMPING);
+}
+
+function handleBumper(x: number, y: number, vx: number, vy: number, bumper: Bumper): Vec | null {
+  const r = deflectFromCircle(x, y, vx, vy, bumper.x, bumper.y, BALL_RADIUS + bumper.radius, 0.9);
+  if (r) {
+    const d = dist(x, y, bumper.x, bumper.y) || 1;
+    const nx = (x - bumper.x) / d;
+    const ny = (y - bumper.y) / d;
+    r.vx += nx * bumper.strength * 30;
+    r.vy += ny * bumper.strength * 30;
+  }
+  return r;
+}
+
+function handleRing(x: number, y: number, vx: number, vy: number, ring: Ring): Vec | null {
+  const d = dist(x, y, ring.x, ring.y);
+  // Outer edge — bounce inward
+  if (d > ring.outerRadius - BALL_RADIUS && d < ring.outerRadius + BALL_RADIUS) {
+    return deflectFromCircle(x, y, vx, vy, ring.x, ring.y, ring.outerRadius + BALL_RADIUS, BOUNCE_DAMPING);
+  }
+  // Inner edge — bounce outward (push away from center)
+  if (d < ring.innerRadius + BALL_RADIUS && d > 0.1) {
+    const nx = (x - ring.x) / d;
+    const ny = (y - ring.y) / d;
+    const dot = vx * nx + vy * ny;
+    if (dot < 0) {
+      return {
+        x: ring.x + nx * (ring.innerRadius + BALL_RADIUS + 0.5),
+        y: ring.y + ny * (ring.innerRadius + BALL_RADIUS + 0.5),
+        vx: (vx - 2 * dot * nx) * BOUNCE_DAMPING,
+        vy: (vy - 2 * dot * ny) * BOUNCE_DAMPING,
+      };
+    }
   }
   return null;
 }
 
-function handleRamp(
-  x: number, y: number, vx: number, vy: number, ramp: Ramp,
-): Vec | null {
-  // Line segment collision
+function handleSpinner(x: number, y: number, vx: number, vy: number, spinner: Spinner): { vx: number; vy: number } | null {
+  const d = dist(x, y, spinner.x, spinner.y);
+  if (d < BALL_RADIUS + spinner.radius + 5) {
+    const angle = Math.atan2(y - spinner.y, x - spinner.x);
+    const tangentAngle = angle + (Math.PI / 2) * spinner.direction;
+    const force = Math.abs(spinner.speed) * 8;
+    return {
+      vx: vx + Math.cos(tangentAngle) * force,
+      vy: vy + Math.sin(tangentAngle) * force,
+    };
+  }
+  return null;
+}
+
+function handleGap(x: number, y: number, vx: number, vy: number, gap: Gap): Vec | null {
+  if (y > gap.y - BALL_RADIUS - gap.wallHeight / 2 &&
+      y < gap.y + BALL_RADIUS + gap.wallHeight / 2 &&
+      vy > 0) {
+    const inOpening = x > gap.openingX - 5 && x < gap.openingX + gap.openingWidth + 5;
+    if (!inOpening) {
+      return {
+        x,
+        y: gap.y - BALL_RADIUS - gap.wallHeight / 2 - 1,
+        vx: vx * 0.9,
+        vy: -vy * 0.4,
+      };
+    }
+  }
+  return null;
+}
+
+function handleFunnel(x: number, y: number, vx: number, funnel: Funnel): { vx: number } | null {
+  if (y > funnel.y && y < funnel.y + funnel.height) {
+    const progress = (y - funnel.y) / funnel.height;
+    const currentWidth = funnel.topWidth + (funnel.bottomWidth - funnel.topWidth) * progress;
+    const leftEdge = funnel.centerX - currentWidth / 2;
+    const rightEdge = funnel.centerX + currentWidth / 2;
+    if (x < leftEdge) return { vx: vx + 3 };
+    if (x > rightEdge) return { vx: vx - 3 };
+    return { vx: vx + (funnel.centerX - x) * 0.02 };
+  }
+  return null;
+}
+
+function handleRamp(x: number, y: number, vx: number, vy: number, ramp: Ramp): Vec | null {
   const dx = ramp.x2 - ramp.x1;
   const dy = ramp.y2 - ramp.y1;
   const len = Math.sqrt(dx * dx + dy * dy);
   if (len === 0) return null;
 
-  const nx = -dy / len; // normal (pointing "up" from the ramp)
+  const nx = -dy / len;
   const ny = dx / len;
-
-  // Distance from ball to line
   const px = x - ramp.x1;
   const py = y - ramp.y1;
   const dotN = px * nx + py * ny;
   const dotT = px * (dx / len) + py * (dy / len);
 
-  if (
-    Math.abs(dotN) < BALL_RADIUS + ramp.thickness / 2 &&
-    dotT >= 0 &&
-    dotT <= len
-  ) {
-    // Reflect velocity off normal
+  const threshold = BALL_RADIUS + ramp.thickness / 2;
+  if (Math.abs(dotN) < threshold && dotT >= -5 && dotT <= len + 5) {
     const velDotN = vx * nx + vy * ny;
     if (velDotN < 0) {
-      // Ball moving toward ramp
       return {
-        x: x - nx * (dotN - (BALL_RADIUS + ramp.thickness / 2)),
-        y: y - ny * (dotN - (BALL_RADIUS + ramp.thickness / 2)),
+        x: x + nx * (threshold - dotN + 1),
+        y: y + ny * (threshold - dotN + 1),
         vx: (vx - 2 * velDotN * nx) * BOUNCE_DAMPING,
         vy: (vy - 2 * velDotN * ny) * BOUNCE_DAMPING,
       };
@@ -208,51 +189,44 @@ function handleRamp(
   return null;
 }
 
-function handleBouncePad(
-  x: number, y: number, vx: number, vy: number, pad: BouncePad,
-): Vec | null {
-  if (
-    x > pad.x &&
-    x < pad.x + pad.width &&
-    y > pad.y - BALL_RADIUS &&
-    y < pad.y + 6 &&
-    vy > 0
-  ) {
+function handleBouncePad(x: number, y: number, vx: number, vy: number, pad: BouncePad): Vec | null {
+  if (x > pad.x && x < pad.x + pad.width &&
+      y > pad.y - BALL_RADIUS - 2 && y < pad.y + 8 && vy > 0) {
     return {
       x,
-      y: pad.y - BALL_RADIUS,
+      y: pad.y - BALL_RADIUS - 2,
       vx: vx * 0.9,
-      vy: -Math.abs(vy) * pad.strength * 0.5,
+      vy: -Math.abs(vy) * 0.6 - pad.strength * 5,
     };
   }
   return null;
 }
 
-function handleBucket(
-  x: number, y: number, vx: number, vy: number, bucket: Bucket,
-): Vec | null {
+function handleBucket(x: number, y: number, vx: number, vy: number, bucket: Bucket): Vec | null {
   const left = bucket.x;
   const right = bucket.x + bucket.width;
-  const top = bucket.y;
   const bottom = bucket.y + bucket.height;
 
-  // Left wall
-  if (x > left - BALL_RADIUS && x < left + 5 && y > top && y < bottom) {
-    return { x: left - BALL_RADIUS, y, vx: -Math.abs(vx) * BOUNCE_DAMPING, vy };
-  }
-  // Right wall
-  if (x < right + BALL_RADIUS && x > right - 5 && y > top && y < bottom) {
-    return { x: right + BALL_RADIUS, y, vx: Math.abs(vx) * BOUNCE_DAMPING, vy };
-  }
-  // Bottom
-  if (y > bottom - BALL_RADIUS && y < bottom + 5 && x > left && x < right) {
-    return { x, y: bottom - BALL_RADIUS, vx, vy: -Math.abs(vy) * BOUNCE_DAMPING };
+  // Only interact if ball is inside horizontal range
+  if (x > left - BALL_RADIUS && x < right + BALL_RADIUS && y > bucket.y && y < bottom + BALL_RADIUS) {
+    // Left wall
+    if (x < left + BALL_RADIUS + 3 && vx < 0) {
+      return { x: left + BALL_RADIUS + 3, y, vx: Math.abs(vx) * 0.5, vy };
+    }
+    // Right wall
+    if (x > right - BALL_RADIUS - 3 && vx > 0) {
+      return { x: right - BALL_RADIUS - 3, y, vx: -Math.abs(vx) * 0.5, vy };
+    }
+    // Bottom
+    if (y > bottom - BALL_RADIUS - 3 && vy > 0) {
+      return { x, y: bottom - BALL_RADIUS - 3, vx: vx * 0.8, vy: -Math.abs(vy) * 0.3 };
+    }
   }
   return null;
 }
 
 // ---------------------------------------------------------------------------
-// Core simulation
+// Core simulation — NO Y-normalization, physics-driven pacing
 // ---------------------------------------------------------------------------
 
 export function simulateBallRace(
@@ -270,113 +244,128 @@ export function simulateBallRace(
   // 1. Random finish order
   const finishOrder = shuffle([...slotsInput], rng);
 
-  // 2. Assign finish times — winner at 28s, others staggered
-  const finishTimes: number[] = [WINNER_FINISH_TIME];
-  for (let i = 1; i < N; i++) {
-    finishTimes.push(finishTimes[i - 1] + 0.15 + rng() * 0.5);
-  }
-
-  const slotPosition = new Map<number, number>();
-  const slotFinishTime = new Map<number, number>();
+  // Gravity modifier per position: 1st place gets slightly more gravity
+  const gravityBySlot = new Map<number, number>();
   for (let i = 0; i < N; i++) {
-    slotPosition.set(finishOrder[i].id, i + 1);
-    slotFinishTime.set(finishOrder[i].id, finishTimes[i]);
+    // 1st place: 1.0, last place: ~0.85
+    const factor = 1.0 - i * (0.15 / Math.max(N - 1, 1));
+    gravityBySlot.set(finishOrder[i].id, GRAVITY * factor);
   }
 
-  // 3. Simulate each ball
-  const balls: BallResult[] = slotsInput.map((slot) => {
-    const position = slotPosition.get(slot.id)!;
-    const targetFinishTime = slotFinishTime.get(slot.id)!;
+  const finishY = COURSE_HEIGHT - 50;
+
+  // 2. Simulate each ball
+  const balls: BallResult[] = [];
+  const finishTimes: number[] = [];
+
+  for (const slot of slotsInput) {
+    const slotGravity = gravityBySlot.get(slot.id) ?? GRAVITY;
     const ballRng = createRngFromString(obstaclesSeed + "_ball_" + slot.id);
 
-    const startX = 50 + ((COURSE_WIDTH - 100) / (N + 1)) * slot.ballIndex;
+    const startX = 50 + ((COURSE_WIDTH - 100) / Math.max(N + 1, 2)) * slot.ballIndex;
     let x = startX + (ballRng() - 0.5) * 20;
     let y = 15;
-    let vx = (ballRng() - 0.5) * 20;
+    let vx = (ballRng() - 0.5) * 10;
     let vy = 0;
     let rotation = 0;
+    let finished = false;
+    let finishTime = RACE_DURATION;
 
-    const baseFallSpeed =
-      1.0 - (position - 1) * (0.1 / Math.max(N - 1, 1));
-
-    const rawKeyframes: BallKeyframe[] = [];
+    const keyframes: BallKeyframe[] = [];
 
     for (let i = 0; i < TOTAL_KEYFRAMES; i++) {
       const t = i * DT;
 
-      // Gravity
-      vy += GRAVITY * DT * baseFallSpeed;
-      // Friction
-      vx *= FRICTION;
-      // Random drift
-      vx += (ballRng() - 0.5) * 12;
+      if (!finished) {
+        // Gravity
+        vy += slotGravity * DT;
 
-      // Update position
-      x += vx * DT;
-      y += vy * DT;
+        // Friction (horizontal only)
+        vx *= FRICTION;
 
-      // Collisions — pegs
-      for (const peg of course.pegs) {
-        const r = handlePeg(x, y, vx, vy, peg);
-        if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
-      }
-      // Bumpers
-      for (const bumper of course.bumpers) {
-        const r = handleBumper(x, y, vx, vy, bumper);
-        if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
-      }
-      // Rings
-      for (const ring of course.rings) {
-        const r = handleRing(x, y, vx, vy, ring);
-        if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
-      }
-      // Spinners
-      for (const spinner of course.spinners) {
-        const r = handleSpinner(x, y, vx, vy, spinner);
-        if (r) { vx = r.vx; vy = r.vy; }
-      }
-      // Gaps
-      for (const gap of course.gaps) {
-        const r = handleGap(x, y, vx, vy, gap);
-        if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
-      }
-      // Funnels
-      for (const funnel of course.funnels) {
-        const r = handleFunnel(x, y, vx, funnel);
-        if (r) { vx = r.vx; }
-      }
-      // Ramps
-      for (const ramp of course.ramps) {
-        const r = handleRamp(x, y, vx, vy, ramp);
-        if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
-      }
-      // Bounce pads
-      for (const pad of course.bouncePads) {
-        const r = handleBouncePad(x, y, vx, vy, pad);
-        if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
-      }
-      // Buckets
-      for (const bucket of course.buckets) {
-        const r = handleBucket(x, y, vx, vy, bucket);
-        if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
+        // Small random lateral drift
+        vx += (ballRng() - 0.5) * 3;
+
+        // Update position
+        x += vx * DT;
+        y += vy * DT;
+
+        // --- Collisions (only check nearby obstacles for performance) ---
+        for (const peg of course.pegs) {
+          if (Math.abs(peg.y - y) > 30) continue;
+          const r = handlePeg(x, y, vx, vy, peg);
+          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
+        }
+        for (const bumper of course.bumpers) {
+          if (Math.abs(bumper.y - y) > 50) continue;
+          const r = handleBumper(x, y, vx, vy, bumper);
+          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
+        }
+        for (const ring of course.rings) {
+          if (Math.abs(ring.y - y) > ring.outerRadius + 20) continue;
+          const r = handleRing(x, y, vx, vy, ring);
+          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
+        }
+        for (const spinner of course.spinners) {
+          if (Math.abs(spinner.y - y) > spinner.radius + 20) continue;
+          const r = handleSpinner(x, y, vx, vy, spinner);
+          if (r) { vx = r.vx; vy = r.vy; }
+        }
+        for (const gap of course.gaps) {
+          if (Math.abs(gap.y - y) > 20) continue;
+          const r = handleGap(x, y, vx, vy, gap);
+          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
+        }
+        for (const funnel of course.funnels) {
+          const r = handleFunnel(x, y, vx, funnel);
+          if (r) { vx = r.vx; }
+        }
+        for (const ramp of course.ramps) {
+          if (Math.abs(Math.min(ramp.y1, ramp.y2) - y) > 40) continue;
+          const r = handleRamp(x, y, vx, vy, ramp);
+          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
+        }
+        for (const pad of course.bouncePads) {
+          if (Math.abs(pad.y - y) > 20) continue;
+          const r = handleBouncePad(x, y, vx, vy, pad);
+          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
+        }
+        for (const bucket of course.buckets) {
+          const r = handleBucket(x, y, vx, vy, bucket);
+          if (r) { x = r.x; y = r.y; vx = r.vx; vy = r.vy; }
+        }
+
+        // Wall boundaries
+        if (x < BALL_RADIUS + WALL_MARGIN) {
+          x = BALL_RADIUS + WALL_MARGIN;
+          vx = Math.abs(vx) * 0.5;
+        }
+        if (x > COURSE_WIDTH - BALL_RADIUS - WALL_MARGIN) {
+          x = COURSE_WIDTH - BALL_RADIUS - WALL_MARGIN;
+          vx = -Math.abs(vx) * 0.5;
+        }
+
+        // CRITICAL: enforce minimum downward velocity so balls never get stuck
+        if (vy < MIN_DOWNWARD_VY) {
+          vy = MIN_DOWNWARD_VY;
+        }
+
+        // Cap velocities to prevent tunneling
+        vx = clamp(vx, -60, 60);
+        vy = clamp(vy, -30, 80); // allow small upward bounce but limited
+
+        rotation += (vx * DT) / BALL_RADIUS;
+
+        // Check finish
+        if (y >= finishY) {
+          y = finishY;
+          vy = 0;
+          finished = true;
+          finishTime = t;
+        }
       }
 
-      // Walls
-      if (x < BALL_RADIUS + WALL_MARGIN) {
-        x = BALL_RADIUS + WALL_MARGIN;
-        vx = Math.abs(vx) * BOUNCE_DAMPING;
-      }
-      if (x > COURSE_WIDTH - BALL_RADIUS - WALL_MARGIN) {
-        x = COURSE_WIDTH - BALL_RADIUS - WALL_MARGIN;
-        vx = -Math.abs(vx) * BOUNCE_DAMPING;
-      }
-
-      // Cap downward velocity
-      vy = clamp(vy, -400, 500);
-
-      rotation += (vx * DT) / BALL_RADIUS;
-
-      rawKeyframes.push({
+      keyframes.push({
         t: parseFloat(t.toFixed(2)),
         x: parseFloat(x.toFixed(1)),
         y: parseFloat(y.toFixed(1)),
@@ -384,24 +373,20 @@ export function simulateBallRace(
       });
     }
 
-    // Normalize Y
-    const finishIndex = Math.min(
-      Math.round(targetFinishTime / DT),
-      TOTAL_KEYFRAMES - 1,
-    );
-    const rawYAtFinish = rawKeyframes[finishIndex].y;
-    const targetY = COURSE_HEIGHT - 50;
-    const yScale = rawYAtFinish > 0 ? targetY / rawYAtFinish : 1;
+    finishTimes.push(finishTime);
 
-    const keyframes: BallKeyframe[] = rawKeyframes.map((kf) => ({
-      t: kf.t,
-      x: kf.x,
-      y: parseFloat(Math.min(kf.y * yScale, targetY).toFixed(1)),
-      rotation: kf.rotation,
-    }));
+    // Determine finish position based on actual finish time
+    balls.push({ slotId: slot.id, finishPosition: 0, keyframes });
+  }
 
-    return { slotId: slot.id, finishPosition: position, keyframes };
-  });
+  // Assign finish positions by actual finish times
+  const sortedByFinish = balls
+    .map((b, i) => ({ idx: i, time: finishTimes[i] }))
+    .sort((a, b) => a.time - b.time);
+
+  for (let i = 0; i < sortedByFinish.length; i++) {
+    balls[sortedByFinish[i].idx].finishPosition = i + 1;
+  }
 
   const durationSeconds = parseFloat(Math.max(...finishTimes).toFixed(1));
 

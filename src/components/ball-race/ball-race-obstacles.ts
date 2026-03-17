@@ -142,20 +142,20 @@ type SectionGenerator = (
   obstacles: Obstacle[],
 ) => void;
 
-/** Classic Galton board peg rows */
+/** Classic Galton board peg rows — wide spacing so balls flow through */
 function sectionPegField(
   rng: () => number,
   yStart: number,
   height: number,
   obstacles: Obstacle[],
 ) {
-  const rows = Math.floor(height / 40);
-  const marginX = 35;
+  const rows = Math.floor(height / 60); // wider vertical spacing
+  const marginX = 40;
   const usableWidth = COURSE_WIDTH - marginX * 2;
 
   for (let row = 0; row < rows; row++) {
-    const y = yStart + 20 + row * (height / rows);
-    const pegsInRow = row % 2 === 0 ? 7 : 6;
+    const y = yStart + 30 + row * (height / rows);
+    const pegsInRow = row % 2 === 0 ? 5 : 4; // fewer pegs per row
     const spacing = usableWidth / (pegsInRow + 1);
     const offset = row % 2 === 0 ? 0 : spacing / 2;
 
@@ -163,7 +163,7 @@ function sectionPegField(
       const baseX = marginX + spacing * (col + 1) + offset;
       obstacles.push({
         type: "peg",
-        x: baseX + (rng() - 0.5) * spacing * 0.25,
+        x: baseX + (rng() - 0.5) * spacing * 0.2,
         y: y + (rng() - 0.5) * 8,
         radius: PEG_RADIUS + (rng() - 0.5) * 2,
       });
@@ -232,22 +232,22 @@ function sectionSpinners(
   }
 }
 
-/** Horizontal walls with gaps */
+/** Horizontal walls with gaps — generous openings */
 function sectionGaps(
   rng: () => number,
   yStart: number,
   height: number,
   obstacles: Obstacle[],
 ) {
-  const count = 3 + Math.floor(rng() * 2);
+  const count = 2 + Math.floor(rng() * 2);
   for (let i = 0; i < count; i++) {
-    const openingWidth = 40 + rng() * 45;
+    const openingWidth = 70 + rng() * 60; // wide enough for balls to pass
     obstacles.push({
       type: "gap",
       y: yStart + (height / (count + 1)) * (i + 1),
       openingX: 30 + rng() * (COURSE_WIDTH - 60 - openingWidth),
       openingWidth,
-      wallHeight: 8,
+      wallHeight: 6,
     });
   }
 }
@@ -397,41 +397,39 @@ function sectionBuckets(
   }
 }
 
-/** Dense mixed zone with many small obstacles */
+/** Mixed zone — varied but not too dense */
 function sectionChaos(
   rng: () => number,
   yStart: number,
   height: number,
   obstacles: Obstacle[],
 ) {
-  // Dense pegs
-  for (let i = 0; i < 20; i++) {
+  // Scattered pegs
+  for (let i = 0; i < 10; i++) {
     obstacles.push({
       type: "peg",
-      x: 30 + rng() * (COURSE_WIDTH - 60),
-      y: yStart + rng() * height,
-      radius: PEG_RADIUS - 1 + rng() * 4,
+      x: 40 + rng() * (COURSE_WIDTH - 80),
+      y: yStart + 20 + rng() * (height - 40),
+      radius: PEG_RADIUS + rng() * 3,
       color: OBSTACLE_COLORS[Math.floor(rng() * OBSTACLE_COLORS.length)],
     });
   }
-  // A couple bumpers
-  for (let i = 0; i < 2; i++) {
-    obstacles.push({
-      type: "bumper",
-      x: 60 + rng() * (COURSE_WIDTH - 120),
-      y: yStart + height * 0.3 + rng() * height * 0.4,
-      radius: 18 + rng() * 10,
-      strength: 2 + rng(),
-      color: OBSTACLE_COLORS[Math.floor(rng() * OBSTACLE_COLORS.length)],
-    });
-  }
+  // A bumper
+  obstacles.push({
+    type: "bumper",
+    x: 60 + rng() * (COURSE_WIDTH - 120),
+    y: yStart + height * 0.3 + rng() * height * 0.3,
+    radius: 18 + rng() * 10,
+    strength: 1.5 + rng(),
+    color: OBSTACLE_COLORS[Math.floor(rng() * OBSTACLE_COLORS.length)],
+  });
   // A spinner
   obstacles.push({
     type: "spinner",
-    x: COURSE_WIDTH / 2 + (rng() - 0.5) * 100,
-    y: yStart + height * 0.5,
+    x: COURSE_WIDTH / 2 + (rng() - 0.5) * 80,
+    y: yStart + height * 0.6,
     radius: 25 + rng() * 15,
-    speed: (2 + rng() * 2) * (rng() < 0.5 ? 1 : -1),
+    speed: (1.5 + rng() * 2) * (rng() < 0.5 ? 1 : -1),
     direction: rng() < 0.5 ? 1 : -1,
     arms: 3,
   });
